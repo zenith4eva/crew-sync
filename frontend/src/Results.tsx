@@ -460,9 +460,9 @@ function FixSwap({ ids, label, t, busy, onSwap }: { ids: string[]; label: (d: st
   const [b, setB] = useState(ids[1] ?? '');
   return (
     <details className="tool">
-      <summary>Fix swapped colours</summary>
+      <summary>Fix swapped colors</summary>
       <div className="body">
-      <p className="muted">After two dancers cross, their colours can swap. Pause where it happens and swap them from there.</p>
+      <p className="muted">After two dancers cross, their colors can swap. Pause where it happens and swap them from there.</p>
       <div className="row">
         <select value={a} onChange={e => setA(e.target.value)} aria-label="First dancer">{ids.map(d => <option key={d} value={d}>{label(d)}</option>)}</select>
         <span>and</span>

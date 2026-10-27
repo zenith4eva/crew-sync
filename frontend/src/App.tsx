@@ -92,10 +92,10 @@ function Upload({ onCreated }: { onCreated: (id: string) => void }) {
         {dancers > 9 && <p className="notice">Above 9 dancers, tracking can mix people up when they cross. You can fix swaps on the results page.</p>}
         <label className="check">
           <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} required />
-          <span>Every dancer in this video agreed to have it analysed. Uploads are deleted after 7 days.</span>
+          <span>Every dancer in this video agreed to have it analyzed. Uploads are deleted after 7 days.</span>
         </label>
         {err && <p className="error" role="alert">{err}</p>}
-        <button className="primary" disabled={busy || !file || !consent}>{busy ? 'Uploading…' : 'Analyse rehearsal'}</button>
+        <button className="primary" disabled={busy || !file || !consent}>{busy ? 'Uploading…' : 'Analyze rehearsal'}</button>
       </form>
       <div className="span-3 stack">
       <Preview />
@@ -213,7 +213,7 @@ function Job({ id, onLeave }: { id: string; onLeave: () => void }) {
     const now = st.step?.includes('pose') ? 1 : Math.max(0, STEPS.indexOf(st.step ?? ''));
     return (
       <div className="card narrow">
-        <h1>Analysing your rehearsal</h1>
+        <h1>Analyzing your rehearsal</h1>
         <p className="muted" style={{ marginTop: 4 }}>{st.dancers} dancers · usually under a minute</p>
         <div className="progress" aria-hidden><div /></div>
         <ol className="steps" aria-live="polite">

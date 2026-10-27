@@ -1,4 +1,4 @@
-/* True-black flat (taste-skill app sheet, seed 1466084828): elevation by lightness alone, colour only on data.
+/* True-black flat (taste-skill app sheet, seed 1466084828): elevation by lightness alone, color only on data.
    Grid: canvas = 100vw - 2 x 29px; 6 columns, one 14px gutter both ways; spans 4 + 2 and 6 land on the same lines. */
 :root {
   --ground: #000000; --surface: #111111; --raised: #1c1c1c; --nested: #2a2a2a;
