@@ -14,3 +14,15 @@ jobs:
       - run: cd frontend && npm ci && npm run build
       # Unit tests plus the end-to-end run on a synthetic clip; no Meta API key needed.
       - run: python -m pytest -q
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t crew-sync .
+      # The image must start and answer its health check without an API key.
+      - run: |
+          docker run -d --name app -p 8000:8000 crew-sync
+          for i in $(seq 1 30); do curl -fs http://127.0.0.1:8000/api/health && break; sleep 2; done
+          curl -fs http://127.0.0.1:8000/api/health
+          curl -fs http://127.0.0.1:8000/ | grep -q '<div id="root">'
+          docker logs app
