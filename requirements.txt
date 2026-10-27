@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+python-multipart
+httpx
+numpy
+scipy
+librosa
+pytest
