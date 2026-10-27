@@ -1,5 +1,5 @@
 // One-page filming guide to send crews before they record. Each tip maps to a way tracking or scoring fails.
-const TIPS: [string, string][] = [
+export const TIPS: [string, string][] = [
   ['Phone on a tripod, facing the crew', 'A moving camera looks like everyone moving. Prop it on something steady if you have no tripod.'],
   ['Landscape, whole crew head to feet', 'Formation is measured from feet. Leave space at the sides for dancers who travel.'],
   ['Film from where the audience would sit', 'Straight on, at chest height. Side angles squash the spacing between rows.'],
@@ -13,7 +13,7 @@ const TIPS: [string, string][] = [
 
 export default function Guide() {
   return (
-    <article className="card guide">
+    <article className="card guide narrow">
       <h1>How to film your rehearsal</h1>
       <p className="muted">Crew Sync scores every dancer from one video. These steps make the scores accurate.</p>
       <ol>

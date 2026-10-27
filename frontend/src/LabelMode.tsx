@@ -49,9 +49,10 @@ export default function LabelMode({ id, ids, label, color, video }: {
   };
 
   return (
-    <details className="fix" onToggle={e => setOpen((e.target as HTMLDetailsElement).open)}>
-      <summary>Hand-label this clip (for checking the app)</summary>
-      <p className="muted small">Pick a dancer (or press 1–{Math.min(9, ids.length)}), play at quarter speed, and press <kbd>L</kbd> when they're visibly late or <kbd>E</kbd> when early.</p>
+    <details className="tool" onToggle={e => setOpen((e.target as HTMLDetailsElement).open)}>
+      <summary>Hand-label this clip</summary>
+      <div className="body">
+      <p className="muted">Pick a dancer (or press 1–{Math.min(9, ids.length)}), play at quarter speed, and press <kbd>L</kbd> when they're visibly late or <kbd>E</kbd> when early.</p>
       <div className="row">
         <button onClick={toggleSlow}>{slow ? 'Normal speed' : 'Quarter speed'}</button>
         <select value={dancer} onChange={e => setDancer(e.target.value)} aria-label="Dancer to label">
@@ -63,16 +64,17 @@ export default function LabelMode({ id, ids, label, color, video }: {
         <p className="small">App flags you agree with: <b>{agree.flags_agreed}/{agree.flags}</b> ({pct(agree.precision)}) ·
           {' '}your labels the app caught: <b>{agree.labels_caught}/{agree.labels}</b> ({pct(agree.recall)})</p>
       )}
-      <ul className="flags">
+      <ul className="flags" style={{ marginTop: 0 }}>
         {labels.map((l, i) => (
           <li key={i}>
-            <button className="link" onClick={() => { if (video.current) video.current.currentTime = l.time_s; }}>{mmss(l.time_s)}</button>{' '}
-            <b style={{ color: color(l.dancer) }}>{label(l.dancer)}</b> {l.kind}{' '}
-            <button className="link" aria-label="Remove label" onClick={() => save(labels.filter((_, j) => j !== i))}>remove</button>
+            <button className="link when" onClick={() => { if (video.current) video.current.currentTime = l.time_s; }}>{mmss(l.time_s)}</button>
+            <span className="what"><span className="dot" style={{ background: color(l.dancer), marginRight: 8 }} />{label(l.dancer)} {l.kind}</span>
+            <button className="ghost" aria-label="Remove label" onClick={() => save(labels.filter((_, j) => j !== i))}>Remove</button>
           </li>
         ))}
-        {!labels.length && <li className="muted small">No labels yet.</li>}
+        {!labels.length && <li className="faint">No labels yet.</li>}
       </ul>
+      </div>
     </details>
   );
 }

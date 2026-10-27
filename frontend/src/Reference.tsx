@@ -44,8 +44,9 @@ export default function ReferencePanel({ id, res, ids, label, color, onResults }
   const refLabel = (j: string) => `Ref ${(res.reference?.ref_order.indexOf(j) ?? -1) + 1}`;
 
   return (
-    <section className="card">
-      <h3>Reference take</h3>
+    <details className="tool" open={!!ref}>
+      <summary>Score against a reference take{ref?.state === 'done' ? <span className="pill pos">On</span> : null}</summary>
+      <div className="body">
       {err && <p className="error" role="alert">{err}</p>}
 
       {(ref?.state === 'queued' || ref?.state === 'running' || ref?.state === 'scoring') && (
@@ -55,16 +56,16 @@ export default function ReferencePanel({ id, res, ids, label, color, onResults }
       {(!ref || ref.state === 'failed') && (
         <div className="ref-form">
           {ref?.state === 'failed' && <p className="error">{ref.error}</p>}
-          <p className="muted small">Score against the leader's or the official video instead of the crew. It's used only for scoring: the video is deleted right after tracking and never shown or shared.</p>
+          <p className="muted">Score against the leader's or the official video instead of the crew. It's used only for scoring: the video is deleted right after tracking and never shown or shared.</p>
           <input type="file" accept="video/mp4,video/quicktime,.mp4,.mov" aria-label="Reference video" onChange={e => setFile(e.target.files?.[0] ?? null)} />
           <label className="check"><input type="checkbox" checked={mirror} onChange={e => setMirror(e.target.checked)} /><span>Reference is mirrored (a mirror-mode practice video)</span></label>
-          <button className="primary" disabled={!file || busy} onClick={upload}>{busy ? 'Uploading…' : 'Score against reference'}</button>
+          <button disabled={!file || busy} onClick={upload}>{busy ? 'Uploading…' : 'Score against reference'}</button>
         </div>
       )}
 
       {ref?.state === 'done' && res.reference && (
-        <div>
-          <p className="muted small">
+        <div className="ref-form">
+          <p className="muted">
             Timing and positions are measured against each dancer's match in the reference.
 {` Aligned by audio (offset ${res.reference.lag_s.toFixed(2)} s).`}
           </p>
@@ -78,7 +79,7 @@ export default function ReferencePanel({ id, res, ids, label, color, onResults }
             <tbody>
               {ids.map(d => (
                 <tr key={d}>
-                  <td><span className="dot" style={{ background: color(d) }} />{label(d)}</td>
+                  <td><span className="name-cell"><span className="dot" style={{ background: color(d) }} />{label(d)}</span></td>
                   <td>
                     <select value={res.reference!.matches[d] ?? ''} disabled={busy} aria-label={`Reference match for ${label(d)}`}
                       onChange={e => run(async () => onResults(await api.referenceSettings(id, { matches: { ...res.reference!.matches, [d]: e.target.value } })))}>
@@ -90,10 +91,11 @@ export default function ReferencePanel({ id, res, ids, label, color, onResults }
               ))}
             </tbody>
           </table>
-          <p className="muted small">Ref numbers count left to right as the reference opens{res.reference.mirror ? ' (after mirroring)' : ''}.</p>
+          <p className="faint small">Ref numbers count left to right as the reference opens{res.reference.mirror ? ' (after mirroring)' : ''}.</p>
           <button className="ghost" disabled={busy} onClick={() => run(async () => { onResults(await api.removeReference(id)); setRef(null); })}>Remove reference</button>
         </div>
       )}
-    </section>
+      </div>
+    </details>
   );
 }

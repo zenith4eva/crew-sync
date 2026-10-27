@@ -19,8 +19,8 @@ export default function Compare({ before, after }: { before: string; after: stri
     Promise.all([load(before), load(after)]).then(t => setTakes(t as [Take, Take]), e => setErr(e.message));
   }, [before, after]);
 
-  if (err) return <div className="card"><p className="error">{err}</p></div>;
-  if (!takes) return <div className="card muted">Loading takes…</div>;
+  if (err) return <div className="card narrow"><p className="error">{err}</p></div>;
+  if (!takes) return <div className="card narrow muted">Loading takes…</div>;
   const [a, b] = takes;
 
   // Match dancers across takes by the names the crew gave them; SAM ids differ between videos.
@@ -30,31 +30,36 @@ export default function Compare({ before, after }: { before: string; after: stri
   const display = (n: string) => a.st.names[na.get(n)!];
 
   return (
-    <div className="results">
-      <section className="card compare-hero">
-        <div><div className="eyebrow">Before</div><div className="big muted-num">{r(a.res.crew_score) ?? '–'}</div></div>
-        <div className="arrow" aria-hidden>→</div>
-        <div><div className="eyebrow">After</div><div className="big">{r(b.res.crew_score) ?? '–'}</div></div>
-        <div className="delta-big"><Delta before={r(a.res.crew_score)} after={r(b.res.crew_score)} /></div>
-        <p className="muted">Flagged moments: {a.res.flags.length} → {b.res.flags.length}</p>
+    <div className="arrive">
+      <div className="title-row">
+        <div>
+          <h1>Compare takes</h1>
+          <p className="lede">Crew Sync Score <b>{r(a.res.crew_score) ?? '–'} → {r(b.res.crew_score) ?? '–'}</b>, from the earlier take to the later one.</p>
+        </div>
+      </div>
+      <section className="kpis compare-kpis" aria-label="Summary">
+        <div className="kpi"><span className="kpi-label">Before</span><span className="kpi-value muted">{r(a.res.crew_score) ?? '–'}</span></div>
+        <div className="kpi"><span className="kpi-label">After</span><span className="kpi-value lead">{r(b.res.crew_score) ?? '–'}</span></div>
+        <div className="kpi"><span className="kpi-label">Change</span><span className="kpi-value"><Delta before={r(a.res.crew_score)} after={r(b.res.crew_score)} /></span></div>
+        <div className="kpi"><span className="kpi-label">Flagged moments</span><span className="kpi-value">{a.res.flags.length} → {b.res.flags.length}</span></div>
       </section>
 
       <section className="card">
-        <h3>Dancer by dancer</h3>
+        <div className="card-head"><h2>Dancer by dancer</h2><span className="end faint small">Matched by name across the two takes</span></div>
         {names.length ? (
           <table className="dancers">
-            <thead><tr><th>Name</th><th>Before</th><th>After</th><th>Change</th><th>Timing</th><th>Formation</th></tr></thead>
+            <thead><tr><th>Name</th><th className="num">Before</th><th className="num">After</th><th className="num">Change</th><th className="num">Timing</th><th className="num">Formation</th></tr></thead>
             <tbody>
               {names.map(n => {
                 const da = a.res.dancers[na.get(n)!], db = b.res.dancers[nb.get(n)!];
                 return (
                   <tr key={n}>
                     <td>{display(n)}</td>
-                    <td>{r(da?.score) ?? '–'}</td>
-                    <td><b>{r(db?.score) ?? '–'}</b></td>
-                    <td><Delta before={r(da?.score)} after={r(db?.score)} /></td>
-                    <td><Delta before={r(da?.timing)} after={r(db?.timing)} /></td>
-                    <td><Delta before={r(da?.formation)} after={r(db?.formation)} /></td>
+                    <td className="num muted">{r(da?.score) ?? '–'}</td>
+                    <td className="num"><b>{r(db?.score) ?? '–'}</b></td>
+                    <td className="num"><Delta before={r(da?.score)} after={r(db?.score)} /></td>
+                    <td className="num"><Delta before={r(da?.timing)} after={r(db?.timing)} /></td>
+                    <td className="num"><Delta before={r(da?.formation)} after={r(db?.formation)} /></td>
                   </tr>
                 );
               })}

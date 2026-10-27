@@ -8,3 +8,4 @@ node_modules/
 *.mov
 *.MOV
 frontend/dist/
+.taste-skill/

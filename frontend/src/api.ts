@@ -1,6 +1,7 @@
 export type Status = {
   id: string;
   state: 'queued' | 'running' | 'done' | 'failed';
+  created?: number;
   step?: string | null;
   error: string | null;
   dancers: number;

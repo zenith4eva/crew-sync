@@ -11,9 +11,9 @@ from scipy.io import wavfile
 from backend import config, media
 
 W, H = 720, 1280
-BG, TEXT, MUTED, ACCENT, RED = (14, 16, 21), (232, 235, 242), (139, 147, 167), (124, 92, 255), (255, 59, 59)
-COLORS = ["#ff5d5d", "#3ddc84", "#4c8dff", "#ffc53d", "#d36bff", "#2fd3d3", "#ff8a3d", "#a3e635",
-          "#f472b6", "#94a3b8", "#facc15", "#60a5fa", "#34d399", "#fb7185", "#c084fc", "#fdba74"]
+BG, TEXT, MUTED, ACCENT, RED = (0, 0, 0), (255, 255, 255), (180, 180, 180), (198, 242, 78), (229, 72, 77)
+COLORS = ["#ff5d5d", "#3ddc84", "#4c8dff", "#ffc53d", "#ff9ecb", "#2fd3d3", "#ff8a3d", "#a3e635",
+          "#f472b6", "#94a3b8", "#facc15", "#7cc4ff", "#34d399", "#fb7185", "#e0b07a", "#fdba74"]
 REVEAL_S, MOMENT_S, TOTAL_S = 4, 6, 20
 PANEL_MAX_H = 860
 
