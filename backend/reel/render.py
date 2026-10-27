@@ -2,6 +2,7 @@
 Shows only the crew number, never names a dancer (PRD: the results page names people, the Reel doesn't)."""
 import subprocess
 import tempfile
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -18,8 +19,16 @@ REVEAL_S, MOMENT_S, TOTAL_S = 4, 6, 20
 PANEL_MAX_H = 860
 
 
-def font(size: int):
-    return ImageFont.load_default(size=size)
+FONTS = Path(__file__).parent / "fonts"  # Inter 4.1, SIL Open Font License (fonts/OFL.txt)
+
+
+@lru_cache(maxsize=None)
+def font(size: int, weight: str = "Regular"):
+    """weight: Regular, SemiBold or ExtraBold. Falls back to Pillow's default face if the file is missing."""
+    try:
+        return ImageFont.truetype(str(FONTS / f"Inter-{weight}.ttf"), size)
+    except OSError:
+        return ImageFont.load_default(size=size)
 
 
 def render(job: Path, res: dict, out: Path) -> Path:
@@ -68,8 +77,8 @@ def _reveal(score: float, progress: float) -> Image.Image:
     shown = round(score * (1 - (1 - p) ** 3))
     img = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(img)
-    d.text((W / 2, 470), "CREW SYNC SCORE", font=font(40), fill=MUTED, anchor="mm")
-    d.text((W / 2, 640), str(shown), font=font(260), fill=TEXT, anchor="mm")
+    d.text((W / 2, 470), "Crew Sync Score", font=font(40), fill=MUTED, anchor="mm")
+    d.text((W / 2, 640), str(shown), font=font(260, "ExtraBold"), fill=TEXT, anchor="mm")
     d.rounded_rectangle((160, 790, 160 + 400 * p * shown / max(score, 1), 802), 6, fill=ACCENT)
     d.text((W / 2, 1160), "every dancer, in sync", font=font(32), fill=MUTED, anchor="mm")
     return img
@@ -93,13 +102,13 @@ def _panel(frame, res, f, s, color, kind, worst, score, pw, ph) -> Image.Image:
         else:
             d.rectangle((x0 + b[0] * s, y0 + b[1] * s, x0 + b[2] * s, y0 + b[3] * s), **line)
     if kind == "moment":
-        d.text((W / 2, 150), "THE MOMENT TO FIX", font=font(44), fill=TEXT, anchor="mm")
+        d.text((W / 2, 150), "The moment to fix", font=font(48, "SemiBold"), fill=TEXT, anchor="mm")
         word = "late" if worst["offset_ms"] > 0 else "early"
-        d.text((W / 2, y0 + ph + 90), f"{abs(worst['offset_ms'])} ms {word}", font=font(64), fill=RED, anchor="mm")
+        d.text((W / 2, y0 + ph + 90), f"{abs(worst['offset_ms'])} ms {word}", font=font(64, "ExtraBold"), fill=RED, anchor="mm")
         d.text((W / 2, y0 + ph + 160), "one dancer, out of step with the crew", font=font(28), fill=MUTED, anchor="mm")
     else:
-        d.text((W / 2, 130), "CREW SYNC SCORE", font=font(36), fill=MUTED, anchor="mm")
-        d.text((W / 2, 230), str(round(score)), font=font(130), fill=TEXT, anchor="mm")
+        d.text((W / 2, 130), "Crew Sync Score", font=font(36), fill=MUTED, anchor="mm")
+        d.text((W / 2, 230), str(round(score)), font=font(130, "ExtraBold"), fill=TEXT, anchor="mm")
         d.text((W / 2, H - 110), "scored with Crew Sync", font=font(30), fill=MUTED, anchor="mm")
     return img
 

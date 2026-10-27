@@ -49,15 +49,37 @@ https://github.com/user-attachments/assets/9f2283c5-596b-4356-949f-4f00c0d64d32
 
 ## Try it in two minutes
 
+macOS or Linux:
+
+```bash
+git clone https://github.com/zenith4eva/crew-sync && cd crew-sync
+python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt
+(cd backend/meta && npm install) && (cd frontend && npm install && npm run build)
+.venv/bin/python -m eval.make_synthetic data/synthetic.mp4   # a test clip with known answers, no API key needed
+.venv/bin/python -m uvicorn backend.api.app:app --port 8000
+```
+
+Windows (Git Bash):
+
 ```bash
 git clone https://github.com/zenith4eva/crew-sync && cd crew-sync
 py -3.11 -m venv .venv && .venv/Scripts/pip install -r requirements.txt
 (cd backend/meta && npm install) && (cd frontend && npm install && npm run build)
-.venv/Scripts/python -m eval.make_synthetic data/synthetic.mp4   # a test clip with known answers, no API key needed
+.venv/Scripts/python -m eval.make_synthetic data/synthetic.mp4
 .venv/Scripts/python -m uvicorn backend.api.app:app --port 8000
 ```
 
 Open http://localhost:8000 and upload `data/synthetic.mp4` with 5 dancers. With a Meta Model API key in `.env` (see [Run it](#run-it)), upload your own crew.
+
+### On an iPhone
+
+The app runs in Safari; the server runs on your computer. Start it so other devices on your Wi-Fi can reach it:
+
+```bash
+.venv/bin/python -m uvicorn backend.api.app:app --host 0.0.0.0 --port 8000
+```
+
+Then open `http://<your computer's IP>:8000` on the phone (on a Mac, `ipconfig getifaddr en0` prints the IP). Upload picks straight from the camera roll; iPhone `.mov` clips (HEVC) are converted before tracking. Film in 1080p: uploads are capped at 500 MB and 90 s. `--host 0.0.0.0` exposes the app to everyone on that network, so use it on a network you trust; for anything wider, deploy the Docker image behind HTTPS.
 
 ## How it works
 
@@ -120,7 +142,7 @@ Every dancer was within 25 ms at every shift. Our first method, the motion peak 
 - Body pose is tested only against a stand-in for SAM 3D Body, because its weights are gated (see below). The keypoint indices and API come from the sam-3d-body source.
 ## Run it
 
-Needs Python 3.11 and Node 18+. ffmpeg comes from the `imageio-ffmpeg` package.
+Needs Python 3.11 and Node 18+ (macOS, Linux or Windows). ffmpeg comes from the `imageio-ffmpeg` package. The commands below use the Windows path `.venv/Scripts/`; on macOS and Linux it is `.venv/bin/` (and `python3.11` instead of `py -3.11`).
 
 ```bash
 py -3.11 -m venv .venv
@@ -184,4 +206,5 @@ Uploads need a consent box ticked for the whole crew. Videos and results are del
 ## Credits
 
 - [DanceTrack](https://github.com/DanceTrack/DanceTrack) (CC BY 4.0) for tracking evaluation. No DanceTrack footage is in this repo.
+- [Inter](https://github.com/rsms/inter) by Rasmus Andersson (SIL Open Font License) for the Reel's type, bundled in `backend/reel/fonts`.
 - Mask decoding uses Meta's [`@meta-sam/parser`](https://www.npmjs.com/package/@meta-sam/parser) under the SAM License.
