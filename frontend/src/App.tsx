@@ -56,6 +56,7 @@ function Upload({ onCreated }: { onCreated: (id: string) => void }) {
         <span>Dancers in the video</span>
         <input type="number" min={1} max={16} value={dancers} onChange={e => setDancers(Number(e.target.value))} required />
       </label>
+      {dancers > 9 && <p className="warn">More than 9 dancers: tracking can mix people up when they cross. You can fix swaps on the results page.</p>}
       <label className="check">
         <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} required />
         <span>Every dancer in this video agreed to have it analysed. Uploads are deleted after 7 days.</span>

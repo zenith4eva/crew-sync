@@ -110,6 +110,9 @@ def compute(job_id: str, notes: bool) -> dict:
     warnings = []
     if len(trk) < st["dancers"]:
         warnings.append(f"Found {len(trk)} of {st['dancers']} dancers; each is scored only where tracked.")
+    if st["dancers"] > config.MAX_RELIABLE_DANCERS:
+        warnings.append(f"With more than {config.MAX_RELIABLE_DANCERS} dancers, colors can swap when dancers cross. "
+                        "Watch the outlines and use Fix swap where they do.")
     if not trk:
         raise media.MediaError("No dancers were found in this video. Film the whole crew, front-facing.")
     duration = n_frames / config.FPS

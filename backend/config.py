@@ -3,6 +3,13 @@ import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+# Load KEY=VALUE lines from the gitignored .env; real environment variables win.
+if (ROOT / ".env").exists():
+    for _line in (ROOT / ".env").read_text(encoding="utf-8").splitlines():
+        _key, _sep, _value = _line.partition("=")
+        if _sep and not _line.lstrip().startswith("#"):
+            os.environ.setdefault(_key.strip(), _value.strip())
 DATA_DIR = Path(os.getenv("DATA_DIR", ROOT / "data"))
 CACHE_DIR = DATA_DIR / "cache"
 JOBS_DIR = DATA_DIR / "jobs"
@@ -39,6 +46,7 @@ SPACING_TOL = 0.35         # nearest-neighbor gap may differ from the crew media
 LINE_FIT_MAX = 0.20        # crew counts as "in a line" when RMS distance from the fitted line is below this
 LINE_TOL = 0.15            # a dancer this far off the line is out of formation
 MIN_DANCERS_FORMATION = 3
+MAX_RELIABLE_DANCERS = 9   # DanceTrack gate (Oct 27): 12 dancers gave 6 lasting identity switches in 30 s
 
 # Crew Sync Score
 W_TIMING = 0.6

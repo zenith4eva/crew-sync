@@ -105,6 +105,12 @@ def test_dancetrack_switch_count():
     assert r["switches"] == 2 and r["matched"] == 1.0  # both dancers switch at the crossing
     assert count_switches(gt, {})["matched"] == 0.0
 
+    from eval.dancetrack_switches import lasting_switches
+    flip = [{"frame": 10, "gt": "1", "from": "7", "to": "9"}, {"frame": 12, "gt": "1", "from": "9", "to": "7"}]
+    assert lasting_switches(flip, 20) == 0  # 2-frame flip that corrects itself
+    assert lasting_switches(flip[:1], 20) == 1  # swap that never corrects
+    assert lasting_switches(r["detail"], 2) == 2
+
 
 def test_crop_iou():
     m = np.ones((10, 10), bool)
