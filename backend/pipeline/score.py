@@ -18,8 +18,7 @@ def dancer_score(t: float, f: float) -> float:
 def run(tracks: dict, beats: np.ndarray, fps: float) -> dict:
     n_frames = len(next(iter(tracks.values()))["motion"])
     beats = beats[(beats >= 0) & (beats * fps < n_frames)]
-    hits = {i: timing.hit_times(t["motion"], beats, fps) for i, t in tracks.items()}
-    offs = timing.offsets(hits)
+    offs = timing.offsets({i: t["motion"] for i, t in tracks.items()}, beats, fps)
     form, per_beat = formation.scores(tracks, np.round(beats * fps).astype(int).clip(0, n_frames - 1))
     dancers = {}
     for i in tracks:

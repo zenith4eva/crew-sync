@@ -12,12 +12,19 @@ BEATS = np.arange(1.0, 20.0, 0.5)  # 120 BPM
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
-def motion(shift_s=0.0, late_beats=(), late_s=0.0, n=FPS * 21, sigma=0.1):
+_rng = np.random.default_rng(7)
+# Shared choreography: one move per beat with varying size and length, plus off-beat accents. Not periodic,
+# like real dance, so cross-correlation has one clear answer.
+MOVES = [(bt, _rng.uniform(0.3, 1.5), _rng.uniform(0.06, 0.14)) for bt in BEATS] + \
+        [(bt + 0.25, _rng.uniform(0.0, 0.8), 0.08) for bt in BEATS]
+
+
+def motion(shift_s=0.0, late_from=None, late_to=None, late_s=0.0, n=FPS * 21):
     t = np.arange(n) / FPS
     sig = np.zeros(n)
-    for b, bt in enumerate(BEATS):
-        c = bt + shift_s + (late_s if b in late_beats else 0.0)
-        sig += np.exp(-0.5 * ((t - c) / sigma) ** 2)
+    for c, amp, sigma in MOVES:
+        late = late_from is not None and late_from <= c < late_to
+        sig += amp * np.exp(-0.5 * ((t - c - shift_s - (late_s if late else 0.0)) / sigma) ** 2)
     return sig
 
 
@@ -25,35 +32,40 @@ def crew(n=5, **late):
     sigs = {str(i): motion() for i in range(n)}
     if late:
         sigs["0"] = motion(**late)
-    return {i: timing.hit_times(s, BEATS, FPS) for i, s in sigs.items()}
+    return timing.offsets(sigs, BEATS, FPS)
 
 
-@pytest.mark.parametrize("shift_ms", [50, 100, 200])
+@pytest.mark.parametrize("shift_ms", [30, 50, 100, 200])
 def test_shift_recovered(shift_ms):
-    offs = timing.offsets(crew(shift_s=shift_ms / 1000))
-    measured = np.nanmedian(offs["0"]) * 1000
+    measured = np.nanmedian(crew(shift_s=shift_ms / 1000)["0"]) * 1000
     assert abs(measured - shift_ms) < 25, measured
 
 
 def test_crew_late_together_scores_100():
-    hits = {str(i): timing.hit_times(motion(shift_s=0.15), BEATS, FPS) for i in range(4)}
-    offs = timing.offsets(hits)
+    offs = timing.offsets({str(i): motion(shift_s=0.15) for i in range(4)}, BEATS, FPS)
     assert all(timing.score(o) == 100 for o in offs.values())
 
 
-def test_flags_need_consecutive_beats():
-    offs = timing.offsets(crew(late_beats={4, 5, 6, 20}, late_s=0.15))
+def test_flags_late_section_only():
+    offs = crew(late_from=8.0, late_to=12.0, late_s=0.15)
     f = timing.flags(offs, BEATS)
-    assert [(x["dancer"], x["start_beat"], x["end_beat"]) for x in f] == [("0", 4, 6)]
-    assert f[0]["offset_ms"] > 100
-    assert timing.score(offs["0"]) == pytest.approx(100 * (len(BEATS) - 4) / len(BEATS))
+    assert [x["dancer"] for x in f] == ["0"], f
+    assert 7.0 <= f[0]["time_s"] <= 9.0 and f[0]["offset_ms"] > 100
+    assert BEATS[f[0]["end_beat"]] <= 12.5
+    assert 50 < timing.score(offs["0"]) < 95 and timing.score(offs["1"]) == 100
 
 
 def test_untracked_dancer_not_scored():
     sig = motion()
     sig[: FPS * 10] = np.nan
-    hits = timing.hit_times(sig, BEATS, FPS)
-    assert np.isnan(hits[BEATS < 9.5]).all() and not np.isnan(hits[BEATS > 11]).any()
+    offs = timing.offsets({"0": sig, "1": motion(), "2": motion()}, BEATS, FPS)["0"]
+    assert np.isnan(offs[BEATS < 9]).all() and not np.isnan(offs[(BEATS > 12) & (BEATS < 18)]).any()
+
+
+def test_different_choreography_not_scored():
+    other = np.random.default_rng(1).uniform(0, 1, FPS * 21)
+    offs = timing.offsets({"0": other, "1": motion(), "2": motion()}, BEATS, FPS)["0"]
+    assert np.isnan(offs).mean() > 0.8
 
 
 def test_formation_line_and_spacing():

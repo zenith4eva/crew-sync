@@ -40,6 +40,9 @@ MOTION_SMOOTH_FRAMES = 3
 # Timing
 TIMING_TOL_S = 0.100       # within ±100 ms of the crew median counts as in sync
 FLAG_MIN_RUN = 2           # flag after this many consecutive off beats
+TIMING_MAX_LAG_S = 0.35    # largest offset we search for; a dancer further off reads as different choreography
+TIMING_MIN_CORR = 0.5      # below this a dancer's movement doesn't match the crew's; that beat isn't scored
+TIMING_WINDOW_BEATS = 2    # correlate over this many beats either side; DanceTrack sweep (Oct 27): 1 was too noisy
 
 # Formation (distances are in dancer heights, so camera distance doesn't matter)
 SPACING_TOL = 0.35         # nearest-neighbor gap may differ from the crew median gap by this fraction

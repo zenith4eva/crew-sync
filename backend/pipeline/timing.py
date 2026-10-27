@@ -1,4 +1,9 @@
-"""Per-beat hit times, offsets against the crew median, flags and timing scores."""
+"""Per-beat timing offsets against the crew, flags and timing scores.
+
+Offsets come from cross-correlating each dancer's motion signal with the rest of the crew's around each beat.
+Picking the motion peak nearest the beat (the PRD's first idea) fails on real tracks: real motion has a peak every
+few frames, so a dancer 100-200 ms late just matches a neighboring peak and reads as on time (eval/shift_test.py).
+"""
 import warnings
 
 import numpy as np
@@ -6,35 +11,53 @@ import numpy as np
 from backend import config
 
 
-def hit_times(motion: np.ndarray, beats: np.ndarray, fps: float) -> np.ndarray:
-    """Motion peak nearest each beat, refined between frames with a parabola. NaN where untracked or no peak."""
-    hits = np.full(len(beats), np.nan)
-    half = np.median(np.diff(beats)) / 2 if len(beats) > 1 else 0.25
-    n = len(motion)
-    for b, t in enumerate(beats):
-        lo, hi = max(int(np.ceil((t - half) * fps)), 1), min(int(np.floor((t + half) * fps)), n - 2)
-        peaks = [f for f in range(lo, hi + 1)
-                 if motion[f] >= motion[f - 1] and motion[f] > motion[f + 1]]  # NaN compares False
-        if not peaks:
-            continue
-        f = min(peaks, key=lambda p: abs(p / fps - t))
-        y0, y1, y2 = motion[f - 1], motion[f], motion[f + 1]
-        denom = y0 - 2 * y1 + y2
-        shift = 0.5 * (y0 - y2) / denom if denom else 0.0
-        hits[b] = (f + shift) / fps
-    return hits
+def _zscore(x: np.ndarray) -> np.ndarray:
+    v = x[~np.isnan(x)]
+    if v.size < 2 or v.std() == 0:
+        return np.full_like(x, np.nan)
+    return (x - v.mean()) / v.std()
 
 
-def offsets(hits: dict) -> dict:
-    """Each dancer's hit minus the crew median hit on that beat (s). Positive = late."""
-    ids = list(hits)
-    m = np.vstack([hits[i] for i in ids])
-    counts = np.sum(~np.isnan(m), axis=0)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", RuntimeWarning)  # all-NaN beats are expected; masked below
-        med = np.nanmedian(m, axis=0)
-    med[counts < 2] = np.nan  # one dancer can't be out of sync with themselves
-    return {i: m[k] - med for k, i in enumerate(ids)}
+def offsets(motion: dict, beats: np.ndarray, fps: float) -> dict:
+    """{dancer: per-beat offset in s vs the crew}. Positive = late. NaN where untracked, or where the dancer's
+    movement doesn't resemble the crew's (different choreography for that dancer, or occlusion)."""
+    ids = list(motion)
+    z = np.vstack([_zscore(motion[i]) for i in ids]) if ids else np.empty((0, 0))
+    out = {i: np.full(len(beats), np.nan) for i in ids}
+    if len(ids) < 2:
+        return out  # one dancer can't be out of sync with themselves
+    n = z.shape[1]
+    period = np.median(np.diff(beats)) if len(beats) > 1 else 0.5
+    w = max(2, round(config.TIMING_WINDOW_BEATS * period * fps))
+    max_lag = max(1, round(config.TIMING_MAX_LAG_S * fps))
+    for k, i in enumerate(ids):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)  # all-NaN frames are expected
+            ref = np.nanmedian(np.delete(z, k, axis=0), axis=0)  # leave-one-out, so a dancer can't pull the crew
+        x = z[k]
+        for b, t in enumerate(beats):
+            c = round(t * fps)
+            lo, hi = c - w, c + w
+            if lo - max_lag < 0 or hi + max_lag > n:
+                continue
+            r = ref[lo:hi]
+            if np.isnan(r).mean() > 0.2:
+                continue
+            corr = np.full(2 * max_lag + 1, np.nan)
+            for j, lag in enumerate(range(-max_lag, max_lag + 1)):
+                seg = x[lo + lag:hi + lag]
+                ok = ~np.isnan(seg) & ~np.isnan(r)
+                if ok.mean() >= 0.8 and seg[ok].std() > 0 and r[ok].std() > 0:
+                    corr[j] = np.corrcoef(seg[ok], r[ok])[0, 1]
+            if np.all(np.isnan(corr)) or np.nanmax(corr) < config.TIMING_MIN_CORR:
+                continue
+            j = int(np.nanargmax(corr))
+            shift = 0.0
+            if 0 < j < len(corr) - 1 and not np.isnan(corr[j - 1]) and not np.isnan(corr[j + 1]):
+                denom = corr[j - 1] - 2 * corr[j] + corr[j + 1]
+                shift = 0.5 * (corr[j - 1] - corr[j + 1]) / denom if denom else 0.0
+            out[i][b] = (j - max_lag + shift) / fps
+    return out
 
 
 def flags(offs: dict, beats: np.ndarray) -> list[dict]:

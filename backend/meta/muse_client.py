@@ -15,12 +15,20 @@ SCHEMA = {
     "required": ["notes"], "additionalProperties": False,
 }
 
-INSTRUCTIONS = (
-    "You are a dance rehearsal coach. From the crew sync numbers, write 3 to 5 short, plain-language fixes "
-    "a crew leader can say out loud at the next run-through. Name the dancer and the moment (time in seconds). "
-    "Positive offset_ms means late, negative means early. Use \"crew\" as the dancer for whole-crew notes. "
-    "Only use facts in the data."
-)
+INSTRUCTIONS = """You coach a dance crew's rehearsal. Write 3 to 5 fixes the leader can read out at the next run-through.
+
+The data:
+- dancers.<name>.timing: % of beats where that dancer hit the move with the crew (within 100 ms).
+- dancers.<name>.formation: % of beats where that dancer kept even spacing and stayed on the line.
+- flagged_moments: runs of beats where one dancer was off. offset_ms > 0 is late, < 0 is early. time_s is when it starts.
+
+Rules:
+- One concrete fix per note: what to do in the next rehearsal (count it slowly, drill the section, mark floor spots, watch a neighbor), not just "be on the beat".
+- Put the most costly problem first. Skip dancers whose numbers are fine.
+- time_s: use a flagged moment's time_s when the note is about that moment; otherwise 0. Never invent times.
+- Don't read scores back as numbers; say what they mean ("late through the chorus", "drifting off the line").
+- dancer is the dancer's name, or "crew" for whole-crew notes. One or two plain sentences each, no jargon.
+- Only use facts in the data."""
 
 
 def coaching_notes(summary: dict) -> list[dict]:
