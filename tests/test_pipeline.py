@@ -94,6 +94,18 @@ def test_sam_fixture_decodes(tmp_path):
     assert 211 <= x < 271 and 228 <= y < 255
 
 
+def test_dancetrack_switch_count():
+    from eval.dancetrack_switches import count_switches
+    a, b = [0, 0, 10, 20], [50, 0, 60, 20]
+    gt = {f: {"1": a, "2": b} for f in range(6)}
+    clean = {f: {"7": a, "9": b} for f in range(6)}
+    assert count_switches(gt, clean)["switches"] == 0
+    swapped = {f: ({"7": a, "9": b} if f < 3 else {"9": a, "7": b}) for f in range(6)}
+    r = count_switches(gt, swapped)
+    assert r["switches"] == 2 and r["matched"] == 1.0  # both dancers switch at the crossing
+    assert count_switches(gt, {})["matched"] == 0.0
+
+
 def test_crop_iou():
     m = np.ones((10, 10), bool)
     assert tracks.crop_iou((0, 0, m), (0, 0, m)) == 1.0

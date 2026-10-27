@@ -37,7 +37,7 @@ input, select { background: #0f1218; border: 1px solid var(--line); border-radiu
 .results { display: grid; gap: 12px; }
 .score { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
 .score .big { font-size: 64px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
-.score button { margin-left: auto; }
+.score .actions { margin-left: auto; }
 .eyebrow { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }
 .grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 12px; }
 .player { grid-row: span 2; }

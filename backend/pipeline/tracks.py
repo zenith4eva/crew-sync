@@ -59,6 +59,7 @@ def build_track(frames: dict, n_frames: int) -> dict:
     box = np.full((n_frames, 4), np.nan)
     feet = np.full((n_frames, 2), np.nan)
     motion = np.full(n_frames, np.nan)
+    outline = [None] * n_frames
     prev = None
     for f in range(n_frames):
         rec = frames.get(f)
@@ -74,11 +75,21 @@ def build_track(frames: dict, n_frames: int) -> dict:
             bottom = rows[-1]
             cols = np.flatnonzero(m[bottom])
             feet[f] = (x0 + cols.mean(), y0 + bottom)
+            outline[f] = silhouette(m, rows, x0, y0)
         cur = (x0, y0, m)
         if prev is not None:
             motion[f] = 1.0 - crop_iou(prev, cur)
         prev = cur
-    return {"present": present, "box": box, "feet": feet, "motion": smooth(motion)}
+    return {"present": present, "box": box, "feet": feet, "motion": smooth(motion), "outline": outline}
+
+
+def silhouette(m: np.ndarray, rows: np.ndarray, x0: int, y0: int, samples: int = 24) -> list[int]:
+    """Outline polygon as flat [x, y, ...] in frame pixels: left edge down, right edge up, on sampled rows.
+    ponytail: outer silhouette only (gaps between arm and body fill in); trace real contours if outlines look blobby."""
+    ys = [int(y) for y in np.unique(np.linspace(rows[0], rows[-1], min(samples, rows.size)).astype(int)) if m[y].any()]
+    left = [(x0 + int(np.argmax(m[y])), y0 + y) for y in ys]
+    right = [(x0 + m.shape[1] - 1 - int(np.argmax(m[y][::-1])), y0 + y) for y in reversed(ys)]
+    return [v for p in left + right for v in p]
 
 
 def smooth(signal: np.ndarray) -> np.ndarray:

@@ -124,7 +124,8 @@ def compute(job_id: str, notes: bool) -> dict:
     res = score.run(trk, grid, config.FPS)
     res["n_frames"], res["fps"] = n_frames, config.FPS
     res["overlay"] = {i: {"box": [None if np.isnan(b[0]) else [round(v) for v in b] for b in t["box"]],
-                          "feet": [None if np.isnan(p[0]) else [round(v, 1) for v in p] for p in t["feet"]]}
+                          "feet": [None if np.isnan(p[0]) else [round(v, 1) for v in p] for p in t["feet"]],
+                          "outline": t["outline"]}
                       for i, t in trk.items()}
     old = d / "results.json"
     if notes:

@@ -43,6 +43,13 @@ def test_full_flow(client):
     swapped = c.post(f"/api/jobs/{job}/fix-swap", json={"frame": 0, "a": "7", "b": "1"}).json()
     assert swapped["dancers"]["1"]["score"] == before
 
+    r = c.get(f"/api/jobs/{job}/reel")
+    assert r.status_code == 200
+    (data / "reel.mp4").write_bytes(r.content)
+    from backend import media
+    info = media.probe(data / "reel.mp4")
+    assert (info["width"], info["height"]) == (720, 1280) and 19 < info["duration"] < 21 and info["audio"], info
+
     named = c.post(f"/api/jobs/{job}/settings", json={"names": {"7": "Mina"}, "bpm": 120, "first_beat": 0.5}).json()
     assert any("Mina" in n["text"] for n in named["notes"]) or named["notes"]
 

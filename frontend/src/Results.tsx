@@ -48,6 +48,20 @@ export default function ResultsView({ id, status, onDelete }: { id: string; stat
     finally { setBusy(''); }
   }
 
+  async function exportReel() {
+    setBusy('reel'); setErr('');
+    try {
+      const r = await fetch(api.reelUrl(id));
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail ?? 'Reel export failed');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(await r.blob());
+      a.download = 'crew-sync-reel.mp4';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (x) { setErr((x as Error).message); }
+    finally { setBusy(''); }
+  }
+
   if (!res) return <div className="card">{err ? <p className="error">{err}</p> : <span className="muted">Loading results…</span>}</div>;
 
   const duration = res.n_frames / res.fps;
@@ -62,7 +76,10 @@ export default function ResultsView({ id, status, onDelete }: { id: string; stat
           <div className="big">{pct(res.crew_score)}</div>
         </div>
         {lowest && <p>Most to gain: <b style={{ color: color(lowest) }}>{label(lowest)}</b> ({pct(res.dancers[lowest].score)})</p>}
-        <button className="ghost" onClick={onDelete}>Delete video</button>
+        <div className="row actions">
+          <button className="primary" disabled={!!busy} onClick={exportReel}>{busy === 'reel' ? 'Rendering reel…' : 'Export Sync Score Reel'}</button>
+          <button className="ghost" onClick={onDelete}>Delete video</button>
+        </div>
       </section>
 
       {warnings.map(w => <p key={w} className="warn">{w}</p>)}
@@ -145,7 +162,12 @@ function Overlay({ res, frame, ids, color, label, size }: Draw & { label: (d: st
       const b = res.overlay[d].box[frame];
       if (!b) continue;
       g.strokeStyle = g.fillStyle = color(d);
-      g.strokeRect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
+      const o = res.overlay[d].outline?.[frame];
+      if (o) {
+        g.beginPath();
+        for (let k = 0; k < o.length; k += 2) (k ? g.lineTo : g.moveTo).call(g, o[k], o[k + 1]);
+        g.closePath(); g.stroke();
+      } else g.strokeRect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
       g.fillText(label(d), b[0], b[1] - 6);
       const f = res.overlay[d].feet[frame];
       if (f) { g.beginPath(); g.arc(f[0], f[1], g.lineWidth * 2, 0, Math.PI * 2); g.fill(); }

@@ -6,11 +6,13 @@ from pathlib import Path
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from backend import config, jobs, media
+from backend.reel import render
 
 @asynccontextmanager
 async def lifespan(_app):
@@ -21,6 +23,7 @@ async def lifespan(_app):
 
 
 app = FastAPI(title="Crew Sync", lifespan=lifespan)
+app.add_middleware(GZipMiddleware, minimum_size=4096)  # results.json carries per-frame outlines
 app.add_middleware(CORSMiddleware, allow_origins=[config.ALLOWED_ORIGIN], allow_methods=["*"], allow_headers=["*"])
 
 
@@ -108,6 +111,22 @@ def results(job_id: str):
     if not path.exists():
         raise HTTPException(404, "Results not ready")
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+@app.get("/api/jobs/{job_id}/reel")
+def reel(job_id: str):
+    """Renders on first request and whenever results changed since (rename, BPM, fix-swap)."""
+    d = _dir(job_id)
+    _ready(job_id)
+    out, res_path = d / "reel.mp4", d / "results.json"
+    if not out.exists() or out.stat().st_mtime < res_path.stat().st_mtime:
+        tmp = d / "tmp_reel.mp4"
+        try:
+            render.render(d, json.loads(res_path.read_text(encoding="utf-8")), tmp)
+        except media.MediaError as e:
+            raise HTTPException(500, str(e)) from None
+        tmp.replace(out)
+    return FileResponse(out, media_type="video/mp4", filename="crew-sync-reel.mp4")
 
 
 class Settings(BaseModel):

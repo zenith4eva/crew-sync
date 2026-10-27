@@ -23,7 +23,7 @@ export type Results = {
   beats: number[];
   n_frames: number;
   fps: number;
-  overlay: Record<string, { box: (number[] | null)[]; feet: (number[] | null)[] }>;
+  overlay: Record<string, { box: (number[] | null)[]; feet: (number[] | null)[]; outline: (number[] | null)[] }>;
   notes: Note[];
   notes_source: 'muse' | 'template' | null;
 };
@@ -49,4 +49,5 @@ export const api = {
     call<Results>(`/jobs/${id}/settings`, json(s)),
   fixSwap: (id: string, frame: number, a: string, b: string) => call<Results>(`/jobs/${id}/fix-swap`, json({ frame, a, b })),
   videoUrl: (id: string) => `/api/jobs/${id}/video`,
+  reelUrl: (id: string) => `/api/jobs/${id}/reel`,
 };
