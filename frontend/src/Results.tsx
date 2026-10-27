@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, Results, Status } from './api';
+import LabelMode from './LabelMode';
 import ReferencePanel from './Reference';
 import { loadTakes, takeLabel } from './takes';
 
@@ -98,6 +99,7 @@ export default function ResultsView({ id, status, onDelete }: { id: string; stat
           <Timeline res={res} duration={duration} t={t} seek={seek} label={label} color={color} />
           <FixSwap ids={ids} label={label} t={t} busy={busy === 'swap'}
             onSwap={(a, b) => run('swap', () => api.fixSwap(id, frame, a, b))} />
+          <LabelMode id={id} ids={ids} label={label} color={color} video={video} />
         </section>
 
         <section className="card">

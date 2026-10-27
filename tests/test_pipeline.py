@@ -136,14 +136,14 @@ def test_dancetrack_switch_count():
 
 
 def test_hand_label_agreement():
-    from eval.hand_label_check import agreement
+    from backend.pipeline.labels import agreement
     beats = [i * 0.5 for i in range(40)]
     flags = [{"dancer": "7", "start_beat": 16, "end_beat": 19, "offset_ms": 140},   # 8.0-9.5 s, late
              {"dancer": "1", "start_beat": 30, "end_beat": 31, "offset_ms": -120}]  # 15.0-15.5 s, early
-    labels = [{"dancer": "mina", "time_s": 8.7, "kind": "late"},
-              {"dancer": "Ana", "time_s": 15.2, "kind": "late"},   # wrong direction
-              {"dancer": "Jae", "time_s": 3.0, "kind": "early"}]   # app missed it
-    r = agreement(flags, beats, labels, {"7": "Mina", "1": "Ana"}.get)
+    labels = [{"dancer": "7", "time_s": 8.7, "kind": "late"},
+              {"dancer": "1", "time_s": 15.2, "kind": "late"},    # wrong direction
+              {"dancer": "10", "time_s": 3.0, "kind": "early"}]   # app missed it
+    r = agreement(flags, beats, labels)
     assert (r["flags_agreed"], r["labels_caught"]) == (1, 1)
     assert r["precision"] == 0.5 and r["recall"] == pytest.approx(1 / 3)
 

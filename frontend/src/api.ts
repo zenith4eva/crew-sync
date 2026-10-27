@@ -11,7 +11,11 @@ export type Status = {
   reference?: { state: 'queued' | 'running' | 'scoring' | 'done' | 'failed'; error?: string | null; mirror?: boolean; lag_s?: number } | null;
 };
 
-export type Flag = { dancer: string; start_beat: number; end_beat: number; time_s: number; offset_ms: number };
+export type HandLabel = { dancer: string; time_s: number; kind: 'late' | 'early' };
+export type LabelAgreement = {
+  flags: number; labels: number; flags_agreed: number; labels_caught: number; precision: number | null; recall: number | null;
+};
+export type Flag ={ dancer: string; start_beat: number; end_beat: number; time_s: number; offset_ms: number };
 export type Note = { dancer: string; time_s: number; text: string };
 export type Dancer = { timing: number | null; formation: number | null; pose?: number | null; score: number | null; offsets_ms: (number | null)[] };
 
@@ -55,6 +59,9 @@ export const api = {
   referenceSettings: (id: string, s: { mirror?: boolean; matches?: Record<string, string> }) =>
     call<Results>(`/jobs/${id}/reference/settings`, json(s)),
   removeReference: (id: string) => call<Results>(`/jobs/${id}/reference`, { method: 'DELETE' }),
+  labels: (id: string) => call<{ labels: HandLabel[]; agreement: LabelAgreement }>(`/jobs/${id}/labels`),
+  saveLabels: (id: string, labels: HandLabel[]) => call<{ labels: HandLabel[]; agreement: LabelAgreement }>(
+    `/jobs/${id}/labels`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(labels) }),
   videoUrl: (id: string) => `/api/jobs/${id}/video`,
   reelUrl: (id: string) => `/api/jobs/${id}/reel`,
 };

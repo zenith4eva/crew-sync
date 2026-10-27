@@ -90,10 +90,10 @@ Evaluation (DanceTrack val unzipped into `data/dancetrack/val`):
 .venv/Scripts/python -m eval.shift_test
 ```
 
-Hand labels: watch a processed clip at quarter speed, write the moments a dancer is visibly late or early to a JSON file (format in `eval/hand_label_check.py`), then:
+Hand labels: open a processed clip, expand "Hand-label this clip", play at quarter speed and press `L` or `E` when a dancer is visibly late or early (`1`–`9` picks the dancer). The panel shows agreement live; for the README numbers run:
 
 ```bash
-.venv/Scripts/python -m eval.hand_label_check <job_id> eval/hand_labels/clip1.json
+.venv/Scripts/python -m eval.hand_label_check <job_id>
 ```
 
 Body pose (needs an NVIDIA GPU):

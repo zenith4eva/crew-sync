@@ -239,9 +239,14 @@ def compute(job_id: str, notes: bool) -> dict:
     return res
 
 
+def display_names(res: dict, names: dict) -> dict:
+    """{dancer id: name shown in the UI}: the crew's name, else "Dancer k" in numeric id order (same as the UI)."""
+    order = sorted(res["dancers"], key=lambda i: (len(i), i))
+    return {i: names.get(i) or f"Dancer {k + 1}" for k, i in enumerate(order)}
+
+
 def make_notes(res: dict, names: dict) -> tuple[list, str]:
-    order = sorted(res["dancers"], key=lambda i: (len(i), i))  # numeric order, same default labels as the UI
-    name = lambda i: names.get(i) or f"Dancer {order.index(i) + 1}"
+    name = display_names(res, names).get
     summary = {
         "crew_score": round(res["crew_score"]),
         "dancers": {name(i): {"timing": _r(v["timing"]), "formation": _r(v["formation"]),

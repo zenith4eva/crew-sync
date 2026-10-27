@@ -4,6 +4,7 @@ import json
 import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Literal
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from backend import config, jobs, media
+from backend.pipeline import labels as labels_mod
 from backend.reel import render
 
 async def _cleanup_loop():
@@ -206,6 +208,33 @@ def settings(job_id: str, s: Settings):
     names = {k: v.strip()[:40] for k, v in s.names.items() if v.strip()}
     jobs.write_status(job_id, names=names, bpm=s.bpm, first_beat=s.first_beat)
     return _recompute(job_id, notes=s.regenerate_notes)
+
+
+class Label(BaseModel):
+    dancer: str
+    time_s: float = Field(ge=0)
+    kind: Literal["late", "early"]
+
+
+def _labels_response(d: Path) -> dict:
+    labels = json.loads((d / "labels.json").read_text(encoding="utf-8")) if (d / "labels.json").exists() else []
+    res = json.loads((d / "results.json").read_text(encoding="utf-8"))
+    return {"labels": labels, "agreement": labels_mod.agreement(res["flags"], res["beats"], labels)}
+
+
+@app.get("/api/jobs/{job_id}/labels")
+def get_labels(job_id: str):
+    _ready(job_id)
+    return _labels_response(_dir(job_id))
+
+
+@app.put("/api/jobs/{job_id}/labels")
+def put_labels(job_id: str, labels: list[Label]):
+    """Hand labels for the evaluation: moments a person saw a dancer late or early. Replaces the whole list."""
+    _ready(job_id)
+    d = _dir(job_id)
+    (d / "labels.json").write_text(json.dumps([lab.model_dump() for lab in labels]), encoding="utf-8")
+    return _labels_response(d)
 
 
 class Swap(BaseModel):

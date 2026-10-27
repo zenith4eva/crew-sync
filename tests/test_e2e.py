@@ -50,6 +50,13 @@ def test_full_flow(client):
     info = media.probe(data / "reel.mp4")
     assert (info["width"], info["height"]) == (720, 1280) and 19 < info["duration"] < 21 and info["audio"], info
 
+    # Hand labels: one agrees with the app's flag on the late dancer (id 1 after the swap above), one the app missed.
+    labels = [{"dancer": "1", "time_s": 9.0, "kind": "late"}, {"dancer": "7", "time_s": 3.0, "kind": "early"}]
+    r = c.put(f"/api/jobs/{job}/labels", json=labels).json()
+    assert r["agreement"]["labels_caught"] == 1 and r["agreement"]["flags_agreed"] >= 1, r
+    assert c.get(f"/api/jobs/{job}/labels").json()["labels"] == labels
+    assert c.put(f"/api/jobs/{job}/labels", json=[{"dancer": "7", "time_s": 1, "kind": "sideways"}]).status_code == 422
+
     named = c.post(f"/api/jobs/{job}/settings", json={"names": {"7": "Mina"}, "bpm": 120, "first_beat": 0.5}).json()
     assert any("Mina" in n["text"] for n in named["notes"]) or named["notes"]
 
