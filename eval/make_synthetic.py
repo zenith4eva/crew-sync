@@ -43,7 +43,7 @@ def x_offset(t, dancer, fixed=False):
     return x
 
 
-def dancer_mask(t, d, fixed=False):
+def dancer_mask(t, d, fixed=False, mirror=False):
     """Returns (x0, y0, bool mask) for dancer d at time t: a body block plus a head."""
     cx = 120 + d * 100 + x_offset(t, d, fixed)
     feet_y = 300 + (OUT_OF_LINE[3] if not fixed and d == OUT_OF_LINE[0] and OUT_OF_LINE[1] <= t < OUT_OF_LINE[2] else 0)
@@ -51,18 +51,22 @@ def dancer_mask(t, d, fixed=False):
     m = np.zeros((130, 40), bool)
     m[30:, 4:36] = True       # body
     m[0:28, 10:30] = True     # head
+    if mirror:  # a mirrored practice video: the whole picture flipped left-right
+        return W - x0 - m.shape[1], y0, m[:, ::-1]
     return x0, y0, m
 
 
-def render(path: Path, fixed=False) -> None:
+def render(path: Path, fixed=False, start_s=0.0, mirror=False) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         wav = Path(tmp) / "click.wav"
         sr = 22050
-        audio = np.zeros(sr * SECONDS, np.float32)
+        audio = np.zeros(int(sr * (SECONDS + start_s)), np.float32)
         click = np.sin(2 * np.pi * 1000 * np.arange(int(0.03 * sr)) / sr) * np.hanning(int(0.03 * sr))
-        for b in beat_times():
+        loud = np.random.default_rng(3).uniform(0.3, 1.0, len(beat_times()))  # uneven, so audio alignment is unique
+        for b, a in zip(beat_times(), loud):
             i = int(b * sr)
-            audio[i:i + len(click)] += click[: len(audio) - i]
+            audio[i:i + len(click)] += a * click[: len(audio) - i]
+        audio = audio[int(start_s * sr):][: sr * SECONDS]
         wavfile.write(wav, sr, (audio * 0.8 * 32767).astype(np.int16))
         cmd = [media.FFMPEG, "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS),
                "-i", "-", "-i", str(wav), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", str(path)]
@@ -71,7 +75,7 @@ def render(path: Path, fixed=False) -> None:
             img = np.full((H, W, 3), 28, np.uint8)
             img[300:, :] = 45  # floor
             for d in range(N):
-                x0, y0, m = dancer_mask(f / FPS, d, fixed)
+                x0, y0, m = dancer_mask(f / FPS + start_s, d, fixed, mirror)
                 img[y0:y0 + m.shape[0], x0:x0 + m.shape[1]][m] = COLORS[d]
             proc.stdin.write(img.tobytes())
         proc.stdin.close()
@@ -79,18 +83,18 @@ def render(path: Path, fixed=False) -> None:
             raise RuntimeError("ffmpeg failed to render the synthetic clip")
 
 
-def tracks_jsonl(fixed=False) -> str:
+def tracks_jsonl(fixed=False, start_s=0.0, mirror=False) -> str:
     lines = []
     for f in range(FPS * SECONDS):
         for d in range(N):
-            x0, y0, m = dancer_mask(f / FPS, d, fixed)
+            x0, y0, m = dancer_mask(f / FPS + start_s, d, fixed, mirror)
             h, w = m.shape
             lines.append(json.dumps({"f": f, "id": str(d * 3 + 1), "box": [x0, y0, x0 + w, y0 + h], "h": h, "w": w,
                                      "bits": base64.b64encode(np.packbits(m.ravel())).decode()}))
     return "\n".join(lines) + "\n"
 
 
-def seed_cache(path: Path, fixed=False) -> Path:
+def seed_cache(path: Path, fixed=False, start_s=0.0, mirror=False) -> Path:
     """Write tracks under the hash of the video the job pipeline will produce from `path`."""
     with tempfile.TemporaryDirectory() as tmp:
         prepared = Path(tmp) / "video.mp4"
@@ -98,14 +102,15 @@ def seed_cache(path: Path, fixed=False) -> Path:
         key = sam_client._hash(prepared)
     config.CACHE_DIR.mkdir(parents=True, exist_ok=True)
     out = config.CACHE_DIR / f"{key}.tracks.jsonl"
-    out.write_text(tracks_jsonl(fixed), encoding="utf-8")
+    out.write_text(tracks_jsonl(fixed, start_s, mirror), encoding="utf-8")
     return out
 
 
-def make(path: Path, fixed=False) -> Path:
+def make(path: Path, fixed=False, start_s=0.0, mirror=False) -> Path:
+    """start_s: clip starts this far into the routine (a reference filmed from a different point). mirror: flipped."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    render(path, fixed)
-    seed_cache(path, fixed)
+    render(path, fixed, start_s, mirror)
+    seed_cache(path, fixed, start_s, mirror)
     return path
 
 

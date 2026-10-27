@@ -21,6 +21,8 @@ The data:
 - dancers.<name>.timing: % of beats where that dancer hit the move with the crew (within 100 ms).
 - dancers.<name>.formation: % of beats where that dancer kept even spacing and stayed on the line.
 - flagged_moments: runs of beats where one dancer was off. offset_ms > 0 is late, < 0 is early. time_s is when it starts.
+- dancers.<name>.pose (if present): % of beats where every limb was within 25 degrees of the crew's.
+- pose_moments (if present): a limb (e.g. "left forearm") far off the crew's shape at time_s.
 
 Rules:
 - One concrete fix per note: what to do in the next rehearsal (count it slowly, drill the section, mark floor spots, watch a neighbor), not just "be on the beat".

@@ -135,6 +135,56 @@ def test_dancetrack_switch_count():
     assert lasting_switches(r["detail"], 2) == 2
 
 
+def test_hand_label_agreement():
+    from eval.hand_label_check import agreement
+    beats = [i * 0.5 for i in range(40)]
+    flags = [{"dancer": "7", "start_beat": 16, "end_beat": 19, "offset_ms": 140},   # 8.0-9.5 s, late
+             {"dancer": "1", "start_beat": 30, "end_beat": 31, "offset_ms": -120}]  # 15.0-15.5 s, early
+    labels = [{"dancer": "mina", "time_s": 8.7, "kind": "late"},
+              {"dancer": "Ana", "time_s": 15.2, "kind": "late"},   # wrong direction
+              {"dancer": "Jae", "time_s": 3.0, "kind": "early"}]   # app missed it
+    r = agreement(flags, beats, labels, {"7": "Mina", "1": "Ana"}.get)
+    assert (r["flags_agreed"], r["labels_caught"]) == (1, 1)
+    assert r["precision"] == 0.5 and r["recall"] == pytest.approx(1 / 3)
+
+
+def _skeleton(arm_deg=0.0, yaw_deg=0.0, shift=(0, 0, 0)):
+    """MHR70-shaped keypoints: standing, right forearm raised arm_deg from hanging, whole body turned yaw_deg."""
+    from backend.pipeline import pose as P
+    kp = np.zeros((70, 3))
+    pts = {P.L_SHOULDER: (-0.2, 1.5, 0), P.R_SHOULDER: (0.2, 1.5, 0), P.L_HIP: (-0.15, 1.0, 0), P.R_HIP: (0.15, 1.0, 0),
+           P.L_ELBOW: (-0.25, 1.2, 0), P.R_ELBOW: (0.25, 1.2, 0), P.L_WRIST: (-0.25, 0.95, 0),
+           P.L_KNEE: (-0.15, 0.5, 0), P.R_KNEE: (0.15, 0.5, 0), P.L_ANKLE: (-0.15, 0.05, 0), P.R_ANKLE: (0.15, 0.05, 0)}
+    for k, v in pts.items():
+        kp[k] = v
+    a = np.radians(arm_deg)  # forearm swings forward (towards -z) from hanging down
+    kp[P.R_WRIST] = kp[P.R_ELBOW] + 0.25 * np.array([0, -np.cos(a), -np.sin(a)])
+    y = np.radians(yaw_deg)
+    rot = np.array([[np.cos(y), 0, np.sin(y)], [0, 1, 0], [-np.sin(y), 0, np.cos(y)]])
+    return kp @ rot.T + np.array(shift)
+
+
+def test_pose_compares_limbs_not_facing():
+    from backend.pipeline import pose as P
+    crew = {"1": _skeleton(), "2": _skeleton(yaw_deg=20, shift=(3, 0, 1)), "3": _skeleton(yaw_deg=-15),
+            "4": _skeleton(arm_deg=60)}
+    out = P.compare(crew)
+    assert max(out["2"].values()) < 1 and max(out["3"].values()) < 1  # turned dancers aren't penalized
+    assert out["4"]["right forearm"] == pytest.approx(60, abs=1)
+    assert max(v for k, v in out["4"].items() if k != "right forearm") < 1
+    score, flags = P.scores([out, out, {}, out], ["1", "2", "3", "4"], np.array([1.0, 1.5, 2.0, 2.5]))
+    assert score["1"] == 100 and score["4"] == 0
+    assert flags == [  # consecutive beats merge into one run; a beat without pose ends it
+        {"dancer": "4", "start_beat": 0, "end_beat": 1, "time_s": 1.0, "limb": "right forearm", "deg": 60},
+        {"dancer": "4", "start_beat": 3, "end_beat": 3, "time_s": 2.5, "limb": "right forearm", "deg": 60}]
+
+
+def test_score_weights_with_pose():
+    assert score.dancer_score(100.0, 50.0) == pytest.approx(80)            # 0.6 / 0.4
+    assert score.dancer_score(100.0, 50.0, 0.0) == pytest.approx(55)       # 0.4 / 0.3 / 0.3
+    assert score.dancer_score(100.0, np.nan, 0.0) == pytest.approx(40 / 0.7)  # missing part's weight redistributed
+
+
 def test_crop_iou():
     m = np.ones((10, 10), bool)
     assert tracks.crop_iou((0, 0, m), (0, 0, m)) == 1.0

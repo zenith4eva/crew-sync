@@ -1,4 +1,5 @@
 """FastAPI routes. Run: .venv/Scripts/python -m uvicorn backend.api.app:app --port 8000"""
+import asyncio
 import json
 import tempfile
 from contextlib import asynccontextmanager
@@ -14,16 +15,25 @@ from pydantic import BaseModel, Field
 from backend import config, jobs, media
 from backend.reel import render
 
+async def _cleanup_loop():
+    """Retention: delete jobs older than RETENTION_DAYS every hour, even when nobody uploads."""
+    while True:
+        await asyncio.to_thread(jobs.cleanup)
+        await asyncio.sleep(3600)
+
+
 @asynccontextmanager
 async def lifespan(_app):
     config.JOBS_DIR.mkdir(parents=True, exist_ok=True)
     jobs.fail_stale()
-    jobs.cleanup()
+    task = asyncio.create_task(_cleanup_loop())
     yield
+    task.cancel()
 
 
 app = FastAPI(title="Crew Sync", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=4096)  # results.json carries per-frame outlines
+app.add_middleware(CORSMiddleware, allow_origins=[config.ALLOWED_ORIGIN], allow_methods=["*"], allow_headers=["*"])
 
 
 @app.middleware("http")
@@ -33,7 +43,6 @@ async def no_stale_html(request, call_next):
     if response.headers.get("content-type", "").startswith("text/html"):
         response.headers["Cache-Control"] = "no-cache"
     return response
-app.add_middleware(CORSMiddleware, allow_origins=[config.ALLOWED_ORIGIN], allow_methods=["*"], allow_headers=["*"])
 
 
 def _dir(job_id: str) -> Path:
@@ -53,6 +62,14 @@ def create_job(background: BackgroundTasks, video: UploadFile = File(...),
                dancers: int = Form(..., ge=1, le=16), consent: bool = Form(...)):
     if not consent:
         raise HTTPException(400, "Every dancer must agree to analysis before upload.")
+    tmp, ext = _receive(video)
+    job_id = jobs.create(tmp, ext, dancers, consent)
+    background.add_task(jobs.process, job_id)
+    return jobs.read_status(job_id)
+
+
+def _receive(video: UploadFile) -> tuple[Path, str]:
+    """Validate an upload (type, size, length, readable) before any Meta API call. Returns (temp file, ext)."""
     ext = Path(video.filename or "").suffix.lower()
     if ext not in config.ALLOWED_EXTS:
         raise HTTPException(400, "Upload an MP4 or MOV file.")
@@ -77,10 +94,48 @@ def create_job(background: BackgroundTasks, video: UploadFile = File(...),
     except media.MediaError as e:
         Path(tmp.name).unlink()
         raise HTTPException(400, str(e)) from None
-    jobs.cleanup()
-    job_id = jobs.create(Path(tmp.name), ext, dancers, consent)
-    background.add_task(jobs.process, job_id)
+    return Path(tmp.name), ext
+
+
+@app.post("/api/jobs/{job_id}/reference")
+def add_reference(job_id: str, background: BackgroundTasks, video: UploadFile = File(...), mirror: bool = Form(False)):
+    """A leader's or official take to score against. Tracked, then its footage is deleted; never shown."""
+    d = _dir(job_id)
+    _ready(job_id)
+    if (jobs.read_status(job_id).get("reference") or {}).get("state") in ("queued", "running", "scoring"):
+        raise HTTPException(409, "A reference is already processing.")
+    tmp, ext = _receive(video)
+    (d / "reference").mkdir(exist_ok=True)
+    tmp.replace(d / "reference" / f"input{ext}")
+    jobs.write_status(job_id, reference={"state": "queued", "mirror": mirror, "matches": {}})
+    background.add_task(jobs.process_reference, job_id)
     return jobs.read_status(job_id)
+
+
+class RefSettings(BaseModel):
+    mirror: bool | None = None
+    matches: dict[str, str] | None = None
+
+
+@app.post("/api/jobs/{job_id}/reference/settings")
+def reference_settings(job_id: str, s: RefSettings):
+    st = _ready(job_id)
+    if (st.get("reference") or {}).get("state") != "done":
+        raise HTTPException(409, "No finished reference on this job.")
+    changes = {k: v for k, v in s.model_dump().items() if v is not None}
+    if s.mirror is not None and s.mirror != st["reference"].get("mirror"):
+        changes.setdefault("matches", {})  # mirroring changes who stands where; redo the automatic match
+    jobs.write_status(job_id, reference={**st["reference"], **changes})
+    return _recompute(job_id, notes=False)
+
+
+@app.delete("/api/jobs/{job_id}/reference")
+def remove_reference(job_id: str):
+    st = _ready(job_id)
+    if (st.get("reference") or {}).get("state") in ("queued", "running", "scoring"):
+        raise HTTPException(409, "Wait for the reference to finish processing.")
+    jobs.write_status(job_id, reference=None)
+    return _recompute(job_id, notes=True)
 
 
 @app.get("/api/jobs/{job_id}")

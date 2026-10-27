@@ -14,6 +14,11 @@ Built for the Meta Global AI Developer Hackathon (indie track), October 26 to No
 6. **Coaching:** Muse Spark turns the numbers into 3 to 5 fixes as structured JSON. If Muse is unavailable, the notes are built from the numbers and labelled as such.
 7. **Share:** a 20 s, 9:16 Sync Score Reel with the score reveal, the worst moment and the crew with outlines. It shows only the crew number and never names a dancer.
 8. **Before and after:** pick an earlier take on the results page to see the crew score and each named dancer's change.
+9. **Reference take (optional):** upload the leader's or the official video to score against it instead of the crew. The two takes are aligned by cross-correlating their audio, a mirror switch handles mirror-mode practice videos, and dancers are matched to reference dancers on the opening formation (editable). Timing is then measured against each dancer's match, and formation is each dancer's distance from their match's spot after removing overall shift and scale. The reference video is deleted as soon as it is tracked and is never shown or put in the Reel.
+
+10. **Body pose (optional):** SAM 3D Body (open weights, run locally on a GPU) estimates each dancer's 3D joints every 0.25 s, using SAM 3.1's boxes. Each limb's direction in the dancer's own torso frame is compared with the crew's, so a dancer facing a little differently isn't penalized. Limbs more than 25° off are flagged, and the score weights become 0.4 timing, 0.3 formation, 0.3 pose.
+
+The app also warns when the camera moves (phase correlation on the background), when more than 9 dancers are in frame, and when fewer dancers are found than expected.
 
 | Meta model | Job |
 | --- | --- |
@@ -49,7 +54,8 @@ Every dancer was within 25 ms at every shift. Our first method, the motion peak 
 - On these professional crews, 65% of scored beats fall within ±100 ms of the crew. We don't know yet how much of the rest is real and how much is measurement noise; hand-labelled clips will tell.
 - 70% of dancer-beats are scored. A beat is skipped when that dancer is untracked or their movement doesn't match the crew's (different choreography, occlusion).
 - Formation uses raw screen depth with no perspective correction, so back-row spacing reads smaller than it is.
-- Formation assumes even spacing. Staggered rows and V shapes score low even when danced well: on DanceTrack, line-based clips score 83 to 90, other clips 53 to 64. Comparing against a reference take (stretch goal) fixes this.
+- Without a reference, formation assumes even spacing. Staggered rows and V shapes score low even when danced well: on DanceTrack, line-based clips score 83 to 90, other clips 53 to 64. Scoring against a reference take avoids this.
+- Body pose is tested only against a stand-in for SAM 3D Body, because its weights are gated (see below). The keypoint indices and API come from the sam-3d-body source.
 ## Run it
 
 Needs Python 3.11 and Node 18+. ffmpeg comes from the `imageio-ffmpeg` package.
@@ -83,6 +89,27 @@ Evaluation (DanceTrack val unzipped into `data/dancetrack/val`):
 .venv/Scripts/python -m eval.dancetrack_switches data/dancetrack/val --clips 5 --seconds 30
 .venv/Scripts/python -m eval.shift_test
 ```
+
+Hand labels: watch a processed clip at quarter speed, write the moments a dancer is visibly late or early to a JSON file (format in `eval/hand_label_check.py`), then:
+
+```bash
+.venv/Scripts/python -m eval.hand_label_check <job_id> eval/hand_labels/clip1.json
+```
+
+Body pose (needs an NVIDIA GPU):
+
+1. Request access to [facebook/sam-3d-body-dinov3](https://huggingface.co/facebook/sam-3d-body-dinov3) on Hugging Face and log in with `hf auth login`.
+2. Clone [sam-3d-body](https://github.com/facebookresearch/sam-3d-body) and install it in its own Python 3.11 environment per its INSTALL.md (PyTorch with CUDA; the detector, segmentor and MoGe are not needed).
+3. Add to `.env`: `POSE_PYTHON=<that env's python>` and `POSE_REPO=<the clone>`. New jobs then run pose after tracking; without these settings, pose is off.
+
+Docker (one image serves the UI and API on :8000):
+
+```bash
+docker build -t crew-sync .
+docker run -p 8000:8000 -e META_API_KEY=... -e ALLOWED_ORIGIN=https://your.host -v crewsync-data:/app/data crew-sync
+```
+
+CI runs the unit tests and the end-to-end test on a synthetic clip on every push (`.github/workflows/test.yml`); no API key needed.
 
 ## Privacy
 

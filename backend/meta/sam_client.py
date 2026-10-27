@@ -119,6 +119,30 @@ def decode(raw: Path, out: Path) -> None:
     tmp.replace(out)
 
 
+def estimate_pose(video: Path, tracks_jsonl: Path, fps: float, out: Path) -> Path:
+    """SAM 3D Body keypoints every POSE_SAMPLE_S on each SAM 3.1 box, via the runner in the pose env. Cached."""
+    if out.exists():
+        return out
+    step = max(1, round(config.POSE_SAMPLE_S * fps))
+    frames = {}
+    for line in tracks_jsonl.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            rec = json.loads(line)
+            if rec["f"] % step == 0:
+                frames.setdefault(str(rec["f"]), {})[rec["id"]] = rec["box"]
+    job = out.with_suffix(".in.json")
+    job.write_text(json.dumps({"video": str(video), "repo": config.POSE_REPO, "hf_repo": config.POSE_HF_REPO,
+                               "frames": frames}), encoding="utf-8")
+    tmp = out.with_suffix(".tmp")
+    proc = subprocess.run([config.POSE_PYTHON, str(Path(__file__).with_name("sam3d_runner.py")), str(job), str(tmp)],
+                          capture_output=True, text=True)
+    job.unlink(missing_ok=True)
+    if proc.returncode != 0:
+        raise MetaApiError(f"SAM 3D Body failed: {proc.stderr.strip().splitlines()[-1] if proc.stderr else proc.returncode}")
+    tmp.replace(out)
+    return out
+
+
 if __name__ == "__main__":
     import sys
     print(track_video(Path(sys.argv[1])))

@@ -37,6 +37,31 @@ def prepare(src: Path, video_out: Path, audio_out: Path) -> None:
     tmp.replace(video_out)
 
 
+def camera_motion(video: Path, width: int = 160, step_s: float = 0.2) -> float:
+    """Median camera drift in frame widths per second, from phase correlation of small grayscale frames.
+    The static background dominates the correlation, so dancers moving barely register; a tripod reads ~0.
+    ponytail: translation only (no zoom/rotation); good enough to catch a handheld phone."""
+    import numpy as np
+    proc = subprocess.run([FFMPEG, "-i", str(video), "-vf", f"fps={1 / step_s},scale={width}:-2,format=gray",
+                           "-f", "rawvideo", "-"], capture_output=True)
+    info = probe(video)
+    h = round(info["height"] * width / info["width"] / 2) * 2
+    frames = np.frombuffer(proc.stdout, np.uint8)[: (len(proc.stdout) // (width * h)) * width * h]
+    frames = frames.reshape(-1, h, width).astype(float)
+    if len(frames) < 3:
+        return 0.0
+    win = np.outer(np.hanning(h), np.hanning(width))
+    shifts = []
+    for a, b in zip(frames, frames[1:]):
+        fa, fb = np.fft.fft2((a - a.mean()) * win), np.fft.fft2((b - b.mean()) * win)
+        r = fa * np.conj(fb)
+        corr = np.fft.ifft2(r / (np.abs(r) + 1e-9)).real
+        dy, dx = np.unravel_index(np.argmax(corr), corr.shape)
+        dy, dx = (dy if dy <= h // 2 else dy - h), (dx if dx <= width // 2 else dx - width)
+        shifts.append(np.hypot(dx, dy) / width / step_s)
+    return float(np.median(shifts))
+
+
 def _run(cmd: list) -> None:
     proc = subprocess.run(cmd, capture_output=True, text=True)
     if proc.returncode != 0:

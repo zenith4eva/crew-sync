@@ -8,11 +8,12 @@ export type Status = {
   bpm: number | null;
   first_beat: number | null;
   warnings: string[];
+  reference?: { state: 'queued' | 'running' | 'scoring' | 'done' | 'failed'; error?: string | null; mirror?: boolean; lag_s?: number } | null;
 };
 
 export type Flag = { dancer: string; start_beat: number; end_beat: number; time_s: number; offset_ms: number };
 export type Note = { dancer: string; time_s: number; text: string };
-export type Dancer = { timing: number | null; formation: number | null; score: number | null; offsets_ms: (number | null)[] };
+export type Dancer = { timing: number | null; formation: number | null; pose?: number | null; score: number | null; offsets_ms: (number | null)[] };
 
 export type Results = {
   crew_score: number | null;
@@ -26,6 +27,8 @@ export type Results = {
   overlay: Record<string, { box: (number[] | null)[]; feet: (number[] | null)[]; outline: (number[] | null)[] }>;
   notes: Note[];
   notes_source: 'muse' | 'template' | null;
+  reference: { lag_s: number; mirror: boolean; matches: Record<string, string>; ref_order: string[] } | null;
+  pose_flags: { dancer: string; start_beat: number; end_beat: number; time_s: number; limb: string; deg: number }[] | null;
 };
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
@@ -48,6 +51,10 @@ export const api = {
   settings: (id: string, s: { names: Record<string, string>; bpm: number | null; first_beat: number | null; regenerate_notes: boolean }) =>
     call<Results>(`/jobs/${id}/settings`, json(s)),
   fixSwap: (id: string, frame: number, a: string, b: string) => call<Results>(`/jobs/${id}/fix-swap`, json({ frame, a, b })),
+  addReference: (id: string, form: FormData) => call<Status>(`/jobs/${id}/reference`, { method: 'POST', body: form }),
+  referenceSettings: (id: string, s: { mirror?: boolean; matches?: Record<string, string> }) =>
+    call<Results>(`/jobs/${id}/reference/settings`, json(s)),
+  removeReference: (id: string) => call<Results>(`/jobs/${id}/reference`, { method: 'DELETE' }),
   videoUrl: (id: string) => `/api/jobs/${id}/video`,
   reelUrl: (id: string) => `/api/jobs/${id}/reel`,
 };

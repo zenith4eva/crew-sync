@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, Results, Status } from './api';
+import ReferencePanel from './Reference';
 import { loadTakes, takeLabel } from './takes';
 
 const COLORS = ['#ff5d5d', '#3ddc84', '#4c8dff', '#ffc53d', '#d36bff', '#2fd3d3', '#ff8a3d', '#a3e635',
@@ -108,7 +109,7 @@ export default function ResultsView({ id, status, onDelete }: { id: string; stat
         <section className="card">
           <h3>Dancers</h3>
           <table className="dancers">
-            <thead><tr><th>Name</th><th>Score</th><th>Timing</th><th>Formation</th></tr></thead>
+            <thead><tr><th>Name</th><th>Score</th><th>Timing</th><th>Formation</th>{res.pose_flags && <th>Pose</th>}</tr></thead>
             <tbody>
               {ids.map(d => (
                 <tr key={d}>
@@ -120,6 +121,7 @@ export default function ResultsView({ id, status, onDelete }: { id: string; stat
                   <td><b>{pct(res.dancers[d].score)}</b></td>
                   <td>{pct(res.dancers[d].timing)}</td>
                   <td>{pct(res.dancers[d].formation)}</td>
+                  {res.pose_flags && <td>{pct(res.dancers[d].pose ?? null)}</td>}
                 </tr>
               ))}
             </tbody>
@@ -132,6 +134,20 @@ export default function ResultsView({ id, status, onDelete }: { id: string; stat
             }))}>{busy === 'save' ? 'Rescoring…' : 'Save and rescore'}</button>
           </div>
         </section>
+
+        {res.pose_flags && (
+          <section className="card">
+            <h3>Body pose</h3>
+            <p className="muted small">SAM 3D Body on each beat: limbs more than 25° off the crew's shape.</p>
+            <ul className="flags">
+              {[...res.pose_flags].sort((a, b) => b.deg - a.deg).slice(0, 6).sort((a, b) => a.time_s - b.time_s).map((f, i) => (
+                <li key={i}><button className="link" onClick={() => seek(f.time_s)}>{mmss(f.time_s)}</button>{' '}
+                  <b style={{ color: color(f.dancer) }}>{label(f.dancer)}</b>: {f.limb} up to {f.deg}° off{f.end_beat > f.start_beat ? ` for ${f.end_beat - f.start_beat + 1} beats` : ''}</li>
+              ))}
+              {!res.pose_flags.length && <li className="muted">Every limb matches the crew. Clean.</li>}
+            </ul>
+          </section>
+        )}
 
         <section className="card">
           <h3>Coaching notes</h3>
@@ -149,6 +165,9 @@ export default function ResultsView({ id, status, onDelete }: { id: string; stat
             })}
           </ol>
         </section>
+
+        <ReferencePanel id={id} res={res} ids={ids} label={label} color={color}
+          onResults={r => { setRes(r); api.status(id).then(s => setWarnings(s.warnings), () => {}); }} />
       </div>
     </div>
   );

@@ -35,6 +35,7 @@ ALLOWED_ORIGIN = os.getenv("ALLOWED_ORIGIN", "http://localhost:5173")
 FPS = 15
 MAX_HEIGHT = 720           # downscale before SAM; boxes come back in these pixels
 ALLOWED_EXTS = {".mp4", ".mov"}
+CAMERA_MOTION_MAX = 0.08   # frame widths/s of drift before we warn; tripod clips read <= 0.031 (1 px rounding), handheld ~0.2
 MOTION_SMOOTH_FRAMES = 3
 
 # Timing
@@ -51,6 +52,18 @@ LINE_TOL = 0.15            # a dancer this far off the line is out of formation
 MIN_DANCERS_FORMATION = 3
 HOLD_MAX_MOVE = 0.12       # crew feet moving more than this (dancer heights per beat) = transition, not scored
 MAX_RELIABLE_DANCERS = 9   # DanceTrack gate (Oct 27): 12 dancers gave 6 lasting identity switches in 30 s
+
+# Reference take (stretch 1)
+REF_FORMATION_TOL = 0.25   # max distance from the matched reference dancer's spot, in dancer heights
+REF_MAX_LAG_S = 30         # search this far either way when aligning the two audio tracks
+
+# Body pose (stretch 2): SAM 3D Body runs in its own Python env (torch + CUDA); unset POSE_PYTHON to turn it off
+POSE_PYTHON = os.getenv("POSE_PYTHON", "")          # e.g. C:/envs/sam3d/python.exe
+POSE_REPO = os.getenv("POSE_REPO", "")              # clone of github.com/facebookresearch/sam-3d-body
+POSE_HF_REPO = os.getenv("POSE_HF_REPO", "facebook/sam-3d-body-dinov3")  # gated: request access on Hugging Face
+POSE_SAMPLE_S = 0.25       # run pose on a frame this often; beats use the nearest, so a BPM change needs no rerun
+POSE_TOL_DEG = 25          # a limb more than this far from the crew's is flagged
+W_WITH_POSE = (0.4, 0.3, 0.3)  # timing, formation, pose weights when pose is on (PRD)
 
 # Crew Sync Score
 W_TIMING = 0.6
