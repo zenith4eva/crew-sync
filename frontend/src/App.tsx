@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, Status } from './api';
 import Compare from './Compare';
+import Guide from './Guide';
 import ResultsView from './Results';
 import { forgetTake, saveTake } from './takes';
 
@@ -23,7 +24,8 @@ export default function App() {
         <a className="brand" href="#" onClick={() => open(null)}>Crew Sync</a>
         <span className="tag">every dancer, in sync</span>
       </header>
-      {pair?.length === 2 ? <Compare before={pair[0]} after={pair[1]} />
+      {params.has('guide') ? <Guide />
+        : pair?.length === 2 ? <Compare before={pair[0]} after={pair[1]} />
         : job ? <Job id={job} onLeave={() => open(null)} />
         : <Upload onCreated={id => { saveTake(id); open(id); }} />}
     </div>
@@ -53,7 +55,7 @@ function Upload({ onCreated }: { onCreated: (id: string) => void }) {
   return (
     <form className="card upload" onSubmit={submit}>
       <h1>Score a rehearsal</h1>
-      <p className="muted">Film the whole crew from the front on a tripod, 30 to 90 seconds. MP4 or MOV.</p>
+      <p className="muted">Film the whole crew from the front on a tripod, 30 to 90 seconds. MP4 or MOV. <a href="#guide">How to film</a></p>
       <label className="field">
         <span>Rehearsal video</span>
         <input type="file" accept="video/mp4,video/quicktime,.mp4,.mov" required onChange={e => setFile(e.target.files?.[0] ?? null)} />

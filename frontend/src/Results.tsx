@@ -137,9 +137,16 @@ export default function ResultsView({ id, status, onDelete }: { id: string; stat
           <h3>Coaching notes</h3>
           {res.notes_source === 'template' && <p className="muted small">Auto-generated, Muse unavailable.</p>}
           <ol className="notes">
-            {res.notes.map((n, i) => (
-              <li key={i}><button className="link" onClick={() => seek(n.time_s)}>{mmss(n.time_s)}</button> {n.text}</li>
-            ))}
+            {res.notes.map((n, i) => {
+              const who = ids.find(d => label(d) === n.dancer);
+              return (
+                <li key={i}>
+                  <b style={{ color: who ? color(who) : undefined }}>{n.dancer === 'crew' ? 'Whole crew' : n.dancer}</b>
+                  {n.time_s > 0 && <> · <button className="link" onClick={() => seek(n.time_s)}>{mmss(n.time_s)}</button></>}
+                  <br />{n.text}
+                </li>
+              );
+            })}
           </ol>
         </section>
       </div>
@@ -250,6 +257,9 @@ function FormationMap({ res, frame, ids, color }: Draw) {
 function Timeline({ res, duration, t, seek, label, color }: {
   res: Results; duration: number; t: number; seek: (t: number) => void; label: (d: string) => string; color: (d: string) => string;
 }) {
+  // Biggest problems first: how far off, times how many beats in a row; then shown in time order.
+  const cost = (f: Results['flags'][number]) => Math.abs(f.offset_ms) * (f.end_beat - f.start_beat + 1);
+  const worst = [...res.flags].sort((a, b) => cost(b) - cost(a)).slice(0, 6).sort((a, b) => a.time_s - b.time_s);
   return (
     <div className="timeline-wrap">
       <div className="timeline" onClick={e => {
@@ -264,11 +274,12 @@ function Timeline({ res, duration, t, seek, label, color }: {
         ))}
       </div>
       <ul className="flags">
-        {res.flags.slice(0, 8).map((f, i) => (
+        {worst.map((f, i) => (
           <li key={i}><button className="link" onClick={() => seek(f.time_s)}>{mmss(f.time_s)}</button>{' '}
             <b style={{ color: color(f.dancer) }}>{label(f.dancer)}</b> is {Math.abs(f.offset_ms)} ms {f.offset_ms > 0 ? 'late' : 'early'}</li>
         ))}
         {!res.flags.length && <li className="muted">No flagged moments. Nice.</li>}
+        {res.flags.length > worst.length && <li className="muted small">The {worst.length} biggest of {res.flags.length} flagged moments. The rest are on the timeline.</li>}
       </ul>
     </div>
   );

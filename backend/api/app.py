@@ -24,6 +24,15 @@ async def lifespan(_app):
 
 app = FastAPI(title="Crew Sync", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=4096)  # results.json carries per-frame outlines
+
+
+@app.middleware("http")
+async def no_stale_html(request, call_next):
+    """index.html must revalidate so a rebuilt UI loads; hashed JS/CSS assets can cache normally."""
+    response = await call_next(request)
+    if response.headers.get("content-type", "").startswith("text/html"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
 app.add_middleware(CORSMiddleware, allow_origins=[config.ALLOWED_ORIGIN], allow_methods=["*"], allow_headers=["*"])
 
 
