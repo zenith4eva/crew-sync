@@ -50,6 +50,8 @@ Most raw switches are flips of 1 to 13 frames while two dancers overlap; they se
 
 Every dancer was within 25 ms at every shift. Our first method, the motion peak nearest each beat, measured 9 ms for a 100 ms shift on these real tracks and was replaced.
 
+**Flagging (flag test).** We delayed each of the 34 dancers in turn by 150 ms for 4 s at a random point, using real tracks. The app flagged the delay in 68% of trials. On these professional crews it also raised 4.4 other flags per dancer-minute; some may be real, so that's an upper bound on false alarms. Flags need two beats in a row more than 120 ms off. Longer runs, sign-consistent runs, smoothing across beats and a three-band motion signal all traded detection for fewer flags without beating this balance.
+
 **Limits we know about.**
 - On these professional crews, 65% of scored beats fall within ±100 ms of the crew. We don't know yet how much of the rest is real and how much is measurement noise; hand-labelled clips will tell.
 - 70% of dancer-beats are scored. A beat is skipped when that dancer is untracked or their movement doesn't match the crew's (different choreography, occlusion).
@@ -88,6 +90,7 @@ Evaluation (DanceTrack val unzipped into `data/dancetrack/val`):
 ```bash
 .venv/Scripts/python -m eval.dancetrack_switches data/dancetrack/val --clips 5 --seconds 30
 .venv/Scripts/python -m eval.shift_test
+.venv/Scripts/python -m eval.flag_test
 ```
 
 Hand labels: open a processed clip, expand "Hand-label this clip", play at quarter speed and press `L` or `E` when a dancer is visibly late or early (`1`–`9` picks the dancer). The panel shows agreement live; for the README numbers run:

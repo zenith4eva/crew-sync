@@ -41,6 +41,8 @@ MOTION_SMOOTH_FRAMES = 3
 # Timing
 TIMING_TOL_S = 0.100       # within ±100 ms of the crew median counts as in sync
 FLAG_MIN_RUN = 2           # flag after this many consecutive off beats
+FLAG_TOL_S = 0.120         # flag only beyond this (scoring keeps TIMING_TOL_S); eval.flag_test Oct 27:
+                           # 0.10 -> 71% caught, 6.3 false/dancer-min; 0.12 -> 68%, 4.4
 TIMING_MAX_LAG_S = 0.35    # largest offset we search for; a dancer further off reads as different choreography
 TIMING_MIN_CORR = 0.5      # below this a dancer's movement doesn't match the crew's; that beat isn't scored
 TIMING_WINDOW_BEATS = 2    # correlate over this many beats either side; DanceTrack sweep (Oct 27): 1 was too noisy

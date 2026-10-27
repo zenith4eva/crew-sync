@@ -71,10 +71,10 @@ def offsets(motion: dict, beats: np.ndarray, fps: float, refs: dict | None = Non
 
 
 def flags(offs: dict, beats: np.ndarray) -> list[dict]:
-    """Runs of FLAG_MIN_RUN+ consecutive beats off by more than TIMING_TOL_S."""
+    """Runs of FLAG_MIN_RUN+ consecutive beats off by more than FLAG_TOL_S."""
     out = []
     for i, o in offs.items():
-        off = np.abs(o) > config.TIMING_TOL_S  # NaN -> False, so gaps break runs
+        off = np.abs(o) > config.FLAG_TOL_S  # NaN -> False, so gaps break runs
         b = 0
         while b < len(off):
             if not off[b]:
