@@ -32,7 +32,15 @@ def crop_iou(a: tuple, b: tuple) -> float:
     return inter / union if union else 1.0
 
 
-def load(jsonl: Path, n_dancers: int) -> tuple[dict, int]:
+def relabel(dancer: str, frame: int, swaps) -> str:
+    """Apply tap-to-fix swaps: each {frame, a, b} exchanges a and b from that frame to the end of the clip."""
+    for s in swaps:
+        if frame >= s["frame"] and dancer in (s["a"], s["b"]):
+            dancer = s["b"] if dancer == s["a"] else s["a"]
+    return dancer
+
+
+def load(jsonl: Path, n_dancers: int, swaps=()) -> tuple[dict, int]:
     """Returns ({dancer_id: track}, n_frames). Keeps the n_dancers ids seen in the most frames."""
     by_id = defaultdict(dict)
     n_frames = 0
@@ -40,7 +48,7 @@ def load(jsonl: Path, n_dancers: int) -> tuple[dict, int]:
         for line in f:
             if line.strip():
                 rec = json.loads(line)
-                by_id[rec["id"]][rec["f"]] = rec
+                by_id[relabel(rec["id"], rec["f"], swaps)][rec["f"]] = rec
                 n_frames = max(n_frames, rec["f"] + 1)
     keep = sorted(by_id, key=lambda i: len(by_id[i]), reverse=True)[:n_dancers]
     return {i: build_track(by_id[i], n_frames) for i in keep}, n_frames

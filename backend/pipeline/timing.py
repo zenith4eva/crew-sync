@@ -1,4 +1,6 @@
 """Per-beat hit times, offsets against the crew median, flags and timing scores."""
+import warnings
+
 import numpy as np
 
 from backend import config
@@ -28,7 +30,8 @@ def offsets(hits: dict) -> dict:
     ids = list(hits)
     m = np.vstack([hits[i] for i in ids])
     counts = np.sum(~np.isnan(m), axis=0)
-    with np.errstate(all="ignore"):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)  # all-NaN beats are expected; masked below
         med = np.nanmedian(m, axis=0)
     med[counts < 2] = np.nan  # one dancer can't be out of sync with themselves
     return {i: m[k] - med for k, i in enumerate(ids)}

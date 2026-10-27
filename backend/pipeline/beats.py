@@ -6,7 +6,10 @@ def detect(audio_path: str) -> np.ndarray:
     """Beat times in seconds. Reading audio from MP4/MOV needs ffmpeg on PATH."""
     import librosa
     y, sr = librosa.load(audio_path, sr=22050, mono=True)
-    _, frames = librosa.beat.beat_track(y=y, sr=sr, units="frames")
+    # beat_track(y=...) aggregates onsets by median over frequency, which zeroes out narrow-band clicks and
+    # sparse percussion; the mean-aggregated envelope works on both.
+    env = librosa.onset.onset_strength(y=y, sr=sr)
+    _, frames = librosa.beat.beat_track(onset_envelope=env, sr=sr, units="frames")
     return librosa.frames_to_time(frames, sr=sr)
 
 

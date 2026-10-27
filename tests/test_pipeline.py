@@ -61,6 +61,8 @@ def test_formation_line_and_spacing():
     assert all(formation.beat_ok(line, 200).values())
     off_line = {**line, "2": (200.0, 560.0)}
     assert formation.beat_ok(off_line, 200) == {"0": True, "1": True, "2": False, "3": True, "4": True}
+    end_off_line = {**line, "4": (400.0, 545.0)}  # an end dancer must not tilt the fitted line
+    assert formation.beat_ok(end_off_line, 130) == {"0": True, "1": True, "2": True, "3": True, "4": False}
     bunched = {**line, "4": (310.0, 500.0)}
     assert not formation.beat_ok(bunched, 200)["4"]
     assert formation.beat_ok({"0": (0, 0), "1": (1, 1)}, 200) == {}

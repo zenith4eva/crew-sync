@@ -1,0 +1,65 @@
+:root {
+  --bg: #0e1015; --card: #171a22; --line: #262b36; --text: #e8ebf2; --muted: #8b93a7;
+  --accent: #7c5cff; --error: #ff6b6b; --warn: #ffc53d; --floor: #1b1f27;
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+.app { max-width: 1240px; margin: 0 auto; padding: 16px; }
+.top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
+.brand { font-weight: 800; font-size: 22px; color: var(--text); text-decoration: none; letter-spacing: -0.02em; }
+.tag, .muted { color: var(--muted); }
+.small { font-size: 13px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+h1, h2, h3 { margin: 0 0 12px; }
+h3 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+button, select, input { font: inherit; color: inherit; }
+button { background: #232836; border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); font-weight: 600; }
+button.ghost { background: none; color: var(--muted); }
+button.link { background: none; border: 0; padding: 0; color: var(--accent); font-variant-numeric: tabular-nums; }
+input, select { background: #0f1218; border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.error { color: var(--error); }
+.warn { color: var(--warn); margin: 0; }
+
+.upload { max-width: 520px; margin: 40px auto; display: grid; gap: 14px; }
+.field { display: grid; gap: 6px; }
+.check { display: flex; gap: 10px; align-items: flex-start; color: var(--muted); }
+
+.progress { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 16px 0; }
+.progress div { width: 30%; height: 100%; background: var(--accent); animation: slide 1.2s ease-in-out infinite; }
+@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+
+.results { display: grid; gap: 12px; }
+.score { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.score .big { font-size: 64px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+.score button { margin-left: auto; }
+.eyebrow { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }
+.grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 12px; }
+.player { grid-row: span 2; }
+@media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .player { grid-row: auto; } }
+
+.stage { position: relative; }
+.stage video { width: 100%; display: block; border-radius: 8px; background: #000; }
+.overlay { position: absolute; inset: 0; width: 100%; height: calc(100% - 0px); pointer-events: none; }
+.timeline-wrap { margin-top: 10px; }
+.timeline { position: relative; height: 22px; background: var(--floor); border-radius: 6px; cursor: pointer; }
+.playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--text); }
+.flag { position: absolute; top: 4px; width: 14px; height: 14px; padding: 0; border-radius: 50%; transform: translateX(-7px); border: 2px solid var(--bg); }
+.flags { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 4px; font-size: 14px; }
+.fix { margin-top: 12px; color: var(--muted); }
+.fix summary { cursor: pointer; margin-bottom: 8px; }
+
+.formation { width: 100%; border-radius: 8px; display: block; }
+.dancers { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.dancers th { text-align: left; color: var(--muted); font-weight: 500; font-size: 13px; padding: 4px; }
+.dancers td { padding: 4px; border-top: 1px solid var(--line); }
+.dancers input { width: 130px; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+.bpm { margin-top: 12px; }
+.bpm input { width: 80px; }
+.notes { margin: 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.45; }

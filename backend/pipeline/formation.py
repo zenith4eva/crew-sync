@@ -17,12 +17,26 @@ def beat_ok(points: dict, height: float) -> dict:
     med = np.median(nn)
     spacing_ok = np.abs(nn - med) <= config.SPACING_TOL * med
 
-    centered = p - p.mean(axis=0)
-    normal = np.linalg.svd(centered)[2][1]  # direction of least spread
-    dist = np.abs(centered @ normal)
-    in_line = np.sqrt(np.mean(dist ** 2)) < config.LINE_FIT_MAX
+    dist = _robust_line_dist(p)
+    in_line = np.median(dist) < config.LINE_FIT_MAX
     line_ok = dist <= config.LINE_TOL if in_line else np.ones(len(ids), bool)
     return {i: bool(s and l) for i, s, l in zip(ids, spacing_ok, line_ok)}
+
+
+def _line_dist(p: np.ndarray, fit: np.ndarray) -> np.ndarray:
+    mean = fit.mean(axis=0)
+    normal = np.linalg.svd(fit - mean)[2][1]  # direction of least spread
+    return np.abs((p - mean) @ normal)
+
+
+def _robust_line_dist(p: np.ndarray) -> np.ndarray:
+    """Distance of each dancer from the crew's line, robust to a few dancers off it (least median of squares
+    over lines through pairs, then a least-squares refit on the inliers). Plain least squares lets one
+    dancer off the end of a line tilt the fit toward themselves. ponytail: O(n^3), fine for n <= 16."""
+    n = len(p)
+    best = min((_line_dist(p, p[[a, b]]) for a in range(n) for b in range(a + 1, n)), key=np.median)
+    inliers = p[best <= config.LINE_TOL]
+    return _line_dist(p, inliers) if len(inliers) >= 2 else best
 
 
 def scores(tracks: dict, beat_frames: np.ndarray) -> tuple[dict, list[dict]]:

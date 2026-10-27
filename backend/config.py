@@ -5,12 +5,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(os.getenv("DATA_DIR", ROOT / "data"))
 CACHE_DIR = DATA_DIR / "cache"
+JOBS_DIR = DATA_DIR / "jobs"
 
 # Meta Model API
 META_API_KEY = os.getenv("META_API_KEY", "")
 META_API_BASE = os.getenv("META_API_BASE", "https://api.meta.ai/v1")
 SAM_MODEL = os.getenv("SAM_MODEL", "sam-3.1")
-MUSE_MODEL = os.getenv("MUSE_MODEL", "muse-spark-1.2")
+MUSE_MODEL = os.getenv("MUSE_MODEL", "muse-spark-1.3")
 SAM_PROMPT = "person"
 SAM_MASK_ENCODING = "one_bit"  # smaller and faster than "lossless"; outlines don't need lossless
 API_RETRIES = 4
@@ -25,6 +26,8 @@ ALLOWED_ORIGIN = os.getenv("ALLOWED_ORIGIN", "http://localhost:5173")
 
 # Processing
 FPS = 15
+MAX_HEIGHT = 720           # downscale before SAM; boxes come back in these pixels
+ALLOWED_EXTS = {".mp4", ".mov"}
 MOTION_SMOOTH_FRAMES = 3
 
 # Timing

@@ -12,7 +12,7 @@ from backend import config
 DECODER = Path(__file__).with_name("decode_masks.mjs")
 
 
-class SamError(Exception):
+class MetaApiError(Exception):
     pass
 
 
@@ -33,16 +33,16 @@ def _with_retries(fn):
             code = e.response.status_code
             if code != 429 and code < 500 or attempt == config.API_RETRIES:
                 # Response body only, never the request: keeps the key out of logs and errors.
-                raise SamError(f"SAM API {code}: {e.response.text[:300]}") from None
+                raise MetaApiError(f"Meta API {code}: {e.response.text[:300]}") from None
         except httpx.TransportError as e:
             if attempt == config.API_RETRIES:
-                raise SamError(f"SAM API unreachable: {type(e).__name__}") from None
+                raise MetaApiError(f"Meta API unreachable: {type(e).__name__}") from None
         time.sleep(2 ** attempt)
 
 
 def _headers() -> dict:
     if not config.META_API_KEY:
-        raise SamError("META_API_KEY is not set")
+        raise MetaApiError("META_API_KEY is not set")
     return {"Authorization": f"Bearer {config.META_API_KEY}"}
 
 
@@ -87,8 +87,8 @@ def _segment(client: httpx.Client, file_id: str) -> str:
                 elif kind == "response.completed":
                     return "".join(parts)
                 elif kind in ("response.failed", "response.incomplete", "error"):
-                    raise SamError(f"SAM stream ended with {kind}: {json.dumps(event)[:300]}")
-        raise SamError("SAM stream closed before response.completed")
+                    raise MetaApiError(f"SAM stream ended with {kind}: {json.dumps(event)[:300]}")
+        raise MetaApiError("SAM stream closed before response.completed")
     return _with_retries(go)
 
 
@@ -115,7 +115,7 @@ def decode(raw: Path, out: Path) -> None:
     tmp = out.with_suffix(".tmp")
     proc = subprocess.run(["node", str(DECODER), str(raw), str(tmp)], capture_output=True, text=True)
     if proc.returncode != 0:
-        raise SamError(f"mask decode failed: {proc.stderr[-500:]}")
+        raise MetaApiError(f"mask decode failed: {proc.stderr[-500:]}")
     tmp.replace(out)
 
 
