@@ -6,7 +6,7 @@ and matched to ground truth per frame by box IoU. A switch is a ground-truth dan
 changes (the standard MOT IDSW count). We keep the N longest SAM tracks, N = dancers in ground truth, like the app.
 
 Usage: python -m eval.dancetrack_switches path/to/dancetrack/val --clips 5 --seconds 30
-Gate: at most 1 lasting switch (new id holds >= LASTING_S) per clip on at least 4 of 5 clips. Raw MOT IDSW is
+Gate: at most 1 lasting switch (new id holds >= LASTING_S) and >= 50% of dancer-frames matched, on 80% of clips. Raw MOT IDSW is
 also reported; it counts sub-second flips while dancers overlap, which self-correct. The 1 s cutoff was chosen
 after the first run (Oct 27), so report both numbers.
 """
@@ -132,11 +132,15 @@ def main() -> None:
         print(f"{seq.name}: {res['switches']} raw switches, {res['lasting']} lasting >= {LASTING_S} s, "
               f"{res['matched']:.0%} of dancer-frames matched, {n_dancers} dancers")
 
+    # A clip where most dancers are never found has few switches only because there is little to switch; it fails.
+    ok = lambda r: r["lasting"] <= 1 and r["matched"] >= 0.5
     raw = sum(r["switches"] <= 1 for r in rows)
-    passed = sum(r["lasting"] <= 1 for r in rows)
     print(f"\nRaw MOT IDSW (info): {raw}/{len(rows)} clips with at most 1 switch.")
-    print(f"Gate, lasting >= {LASTING_S} s: {passed}/{len(rows)} clips with at most 1 switch "
-          f"-> {'PASS' if passed >= 0.8 * len(rows) else 'FAIL'} (need 4 of 5).")
+    for label, sub in (("all clips", rows),
+                       (f"<= {config.MAX_RELIABLE_DANCERS} dancers", [r for r in rows if r["dancers"] <= config.MAX_RELIABLE_DANCERS])):
+        passed = sum(map(ok, sub))
+        print(f"Gate ({label}), lasting >= {LASTING_S} s and >= 50% matched: {passed}/{len(sub)} clips with at most "
+              f"1 switch -> {'PASS' if passed >= 0.8 * len(sub) else 'FAIL'} (need 80%).")
     (out_dir / "dancetrack_switches.json").write_text(json.dumps(rows, indent=1))
 
 

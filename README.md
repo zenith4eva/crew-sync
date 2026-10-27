@@ -27,19 +27,24 @@ The app also warns when the camera moves (phase correlation on the background), 
 
 ## Evaluation
 
-All numbers below are from October 27, 2026, on the first 5 clips of the DanceTrack validation split, first 30 s each (4 to 12 dancers). Reproduce with the commands below.
+All numbers below are from October 27, 2026, on the DanceTrack validation split, first 30 s of each clip. Tracking uses the first 10 clips (4 to 19 dancers); the timing and flag tests use the first 5. Reproduce with the commands below.
 
 **Identity tracking (SAM 3.1).** We matched SAM tracks to DanceTrack ground truth by box IoU every frame and counted identity switches.
 
-| Clip | Dancers | Raw switches (MOT IDSW) | Lasting ≥ 1 s |
-| --- | --- | --- | --- |
-| 0004 | 4 | 2 | 0 |
-| 0005 | 4 | 3 | 1 |
-| 0007 | 8 | 2 | 0 |
-| 0010 | 6 | 10 | 0 |
-| 0014 | 12 | 18 | 6 |
+| Clip | Dancers | Dancer-frames matched | Raw switches (MOT IDSW) | Lasting ≥ 1 s |
+| --- | --- | --- | --- | --- |
+| 0004 | 4 | 95% | 2 | 0 |
+| 0005 | 4 | 97% | 3 | 1 |
+| 0007 | 8 | 93% | 2 | 0 |
+| 0010 | 6 | 97% | 10 | 0 |
+| 0014 | 12 | 90% | 18 | 6 |
+| 0018 | 8 | 86% | 0 | 0 |
+| 0019 | 7 | 98% | 18 | 2 |
+| 0025 | 9 | 96% | 5 | 1 |
+| 0026 | 19 | 0% | – | – |
+| 0030 | 6 | 98% | 0 | 0 |
 
-Most raw switches are flips of 1 to 13 frames while two dancers overlap; they self-correct and need no fix. Counting switches that last at least 1 s, 4 of 5 clips have at most one. We chose the 1 s cutoff after the first run, so both numbers are shown. With 12 dancers, tracking mixes people up often, so the app warns above 9 dancers and offers tap-to-fix.
+Most raw switches are flips of 1 to 13 frames while two dancers overlap; they self-correct and need no fix. We chose the 1 s cutoff after the first 5 clips, so both numbers are shown; the next 5 clips were run after. With up to 9 dancers, 7 of 8 clips have at most one lasting switch. With 12 dancers, tracking mixes people up often, and in the 19-dancer crowd SAM found one person in 7 frames, so the app warns above 9 dancers and offers tap-to-fix.
 
 **Timing accuracy (shift test).** We delayed one dancer's real motion signal by a known amount and measured the offset, for each of the 34 dancers in turn.
 
@@ -88,10 +93,13 @@ Tests: `.venv/Scripts/python -m pytest -q`
 Evaluation (DanceTrack val unzipped into `data/dancetrack/val`):
 
 ```bash
+.venv/Scripts/python -m eval.dancetrack_switches data/dancetrack/val --clips 10 --seconds 30
 .venv/Scripts/python -m eval.dancetrack_switches data/dancetrack/val --clips 5 --seconds 30
 .venv/Scripts/python -m eval.shift_test
 .venv/Scripts/python -m eval.flag_test
 ```
+
+The shift and flag tests read the clip list the last gate run wrote, so run the 5-clip gate (cached, free) before them.
 
 Hand labels: open a processed clip, expand "Hand-label this clip", play at quarter speed and press `L` or `E` when a dancer is visibly late or early (`1`–`9` picks the dancer). The panel shows agreement live; for the README numbers run:
 
