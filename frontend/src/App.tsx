@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
 import { api, Status } from './api';
+import Compare from './Compare';
 import ResultsView from './Results';
+import { forgetTake, saveTake } from './takes';
 
-const jobFromHash = () => new URLSearchParams(location.hash.slice(1)).get('job');
+const route = () => new URLSearchParams(location.hash.slice(1));
 
 export default function App() {
-  const [job, setJob] = useState<string | null>(jobFromHash());
+  const [params, setParams] = useState(route());
   useEffect(() => {
-    const on = () => setJob(jobFromHash());
+    const on = () => setParams(route());
     addEventListener('hashchange', on);
     return () => removeEventListener('hashchange', on);
   }, []);
   const open = (id: string | null) => { location.hash = id ? `job=${id}` : ''; };
+  const job = params.get('job');
+  const pair = params.get('compare')?.split(',');
 
   return (
     <div className="app">
@@ -19,7 +23,9 @@ export default function App() {
         <a className="brand" href="#" onClick={() => open(null)}>Crew Sync</a>
         <span className="tag">every dancer, in sync</span>
       </header>
-      {job ? <Job id={job} onLeave={() => open(null)} /> : <Upload onCreated={open} />}
+      {pair?.length === 2 ? <Compare before={pair[0]} after={pair[1]} />
+        : job ? <Job id={job} onLeave={() => open(null)} />
+        : <Upload onCreated={id => { saveTake(id); open(id); }} />}
     </div>
   );
 }
@@ -89,6 +95,7 @@ function Job({ id, onLeave }: { id: string; onLeave: () => void }) {
   async function remove() {
     if (!confirm('Delete this video and its results now? This cannot be undone.')) return;
     await api.remove(id);
+    forgetTake(id);
     onLeave();
   }
 

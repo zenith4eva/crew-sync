@@ -4,7 +4,9 @@ Five block "dancers" step sideways on every beat of a 120 BPM click track. Dance
 8 s to 12 s; dancer 4 steps out of the line from 14 s to 17 s. Besides the MP4, this writes the matching
 decoded tracks into the SAM cache, keyed by the prepared video's hash, so the pipeline never calls the API.
 
-Usage: python -m eval.make_synthetic data/synthetic.mp4
+With --fixed, nobody is late or out of line: a second take for the before-and-after view.
+
+Usage: python -m eval.make_synthetic data/synthetic.mp4 [--fixed]
 """
 import base64
 import json
@@ -31,20 +33,20 @@ def beat_times():
     return np.arange(0.5, SECONDS, 60 / BPM)
 
 
-def x_offset(t, dancer):
+def x_offset(t, dancer, fixed=False):
     """Sideways steps: smooth step centered on each beat, alternating direction. Speed peaks on the beat."""
     x = 0.0
     for k, b in enumerate(beat_times()):
-        if dancer == LATE[0] and LATE[1] <= b < LATE[2]:
+        if not fixed and dancer == LATE[0] and LATE[1] <= b < LATE[2]:
             b += LATE[3]
         x += (1 if k % 2 == 0 else -1) * 12 * (1 + erf((t - b) / (0.07 * np.sqrt(2)))) / 2
     return x
 
 
-def dancer_mask(t, d):
+def dancer_mask(t, d, fixed=False):
     """Returns (x0, y0, bool mask) for dancer d at time t: a body block plus a head."""
-    cx = 120 + d * 100 + x_offset(t, d)
-    feet_y = 300 + (OUT_OF_LINE[3] if d == OUT_OF_LINE[0] and OUT_OF_LINE[1] <= t < OUT_OF_LINE[2] else 0)
+    cx = 120 + d * 100 + x_offset(t, d, fixed)
+    feet_y = 300 + (OUT_OF_LINE[3] if not fixed and d == OUT_OF_LINE[0] and OUT_OF_LINE[1] <= t < OUT_OF_LINE[2] else 0)
     x0, y0 = int(round(cx - 20)), int(feet_y - 130)
     m = np.zeros((130, 40), bool)
     m[30:, 4:36] = True       # body
@@ -52,7 +54,7 @@ def dancer_mask(t, d):
     return x0, y0, m
 
 
-def render(path: Path) -> None:
+def render(path: Path, fixed=False) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         wav = Path(tmp) / "click.wav"
         sr = 22050
@@ -69,7 +71,7 @@ def render(path: Path) -> None:
             img = np.full((H, W, 3), 28, np.uint8)
             img[300:, :] = 45  # floor
             for d in range(N):
-                x0, y0, m = dancer_mask(f / FPS, d)
+                x0, y0, m = dancer_mask(f / FPS, d, fixed)
                 img[y0:y0 + m.shape[0], x0:x0 + m.shape[1]][m] = COLORS[d]
             proc.stdin.write(img.tobytes())
         proc.stdin.close()
@@ -77,18 +79,18 @@ def render(path: Path) -> None:
             raise RuntimeError("ffmpeg failed to render the synthetic clip")
 
 
-def tracks_jsonl() -> str:
+def tracks_jsonl(fixed=False) -> str:
     lines = []
     for f in range(FPS * SECONDS):
         for d in range(N):
-            x0, y0, m = dancer_mask(f / FPS, d)
+            x0, y0, m = dancer_mask(f / FPS, d, fixed)
             h, w = m.shape
             lines.append(json.dumps({"f": f, "id": str(d * 3 + 1), "box": [x0, y0, x0 + w, y0 + h], "h": h, "w": w,
                                      "bits": base64.b64encode(np.packbits(m.ravel())).decode()}))
     return "\n".join(lines) + "\n"
 
 
-def seed_cache(path: Path) -> Path:
+def seed_cache(path: Path, fixed=False) -> Path:
     """Write tracks under the hash of the video the job pipeline will produce from `path`."""
     with tempfile.TemporaryDirectory() as tmp:
         prepared = Path(tmp) / "video.mp4"
@@ -96,16 +98,17 @@ def seed_cache(path: Path) -> Path:
         key = sam_client._hash(prepared)
     config.CACHE_DIR.mkdir(parents=True, exist_ok=True)
     out = config.CACHE_DIR / f"{key}.tracks.jsonl"
-    out.write_text(tracks_jsonl(), encoding="utf-8")
+    out.write_text(tracks_jsonl(fixed), encoding="utf-8")
     return out
 
 
-def make(path: Path) -> Path:
+def make(path: Path, fixed=False) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    render(path)
-    seed_cache(path)
+    render(path, fixed)
+    seed_cache(path, fixed)
     return path
 
 
 if __name__ == "__main__":
-    print(make(Path(sys.argv[1] if len(sys.argv) > 1 else config.DATA_DIR / "synthetic.mp4")))
+    args = [a for a in sys.argv[1:] if a != "--fixed"]
+    print(make(Path(args[0] if args else config.DATA_DIR / "synthetic.mp4"), fixed="--fixed" in sys.argv))

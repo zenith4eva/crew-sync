@@ -80,6 +80,17 @@ def test_formation_line_and_spacing():
     assert formation.beat_ok({"0": (0, 0), "1": (1, 1)}, 200) == {}
 
 
+def test_formation_skips_transitions():
+    n, beat_frames = 60, np.array([0, 10, 20, 30, 40, 50])
+    trk = {}
+    for i in range(4):
+        x = np.full(n, i * 100.0)
+        x[25:] += 80 * (i % 2)  # half the crew walks to a new spot between beats 20 and 30
+        trk[str(i)] = {"feet": np.stack([x, np.full(n, 500.0)], 1), "box": np.tile([0, 300, 60, 500.0], (n, 1))}
+    _, per_beat = formation.scores(trk, beat_frames)
+    assert per_beat[3] == {} and all(per_beat[k] for k in (0, 1, 2, 4, 5))
+
+
 def test_score_end_to_end_synthetic():
     n = FPS * 21
     trk = {}

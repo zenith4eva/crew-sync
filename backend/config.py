@@ -49,6 +49,7 @@ SPACING_TOL = 0.35         # nearest-neighbor gap may differ from the crew media
 LINE_FIT_MAX = 0.20        # crew counts as "in a line" when RMS distance from the fitted line is below this
 LINE_TOL = 0.15            # a dancer this far off the line is out of formation
 MIN_DANCERS_FORMATION = 3
+HOLD_MAX_MOVE = 0.12       # crew feet moving more than this (dancer heights per beat) = transition, not scored
 MAX_RELIABLE_DANCERS = 9   # DanceTrack gate (Oct 27): 12 dancers gave 6 lasting identity switches in 30 s
 
 # Crew Sync Score

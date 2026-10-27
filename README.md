@@ -9,10 +9,11 @@ Built for the Meta Global AI Developer Hackathon (indie track), October 26 to No
 1. **Track:** SAM 3.1 (Meta Model API) segments every dancer with the prompt "person" and keeps each identity across the clip.
 2. **Beat grid:** librosa finds the beats in the audio. You can set the BPM and first beat by hand when rehearsal audio is noisy.
 3. **Timing:** each dancer's motion signal (frame-to-frame mask change) is cross-correlated with the rest of the crew's around every beat. The lag is that dancer's offset. A crew that is late together still scores 100.
-4. **Formation:** feet points (bottom of each mask) give a top-down map. Each beat checks spacing to neighbors and, when the crew is in a line, distance from it. The line fit ignores dancers who are off it.
+4. **Formation:** feet points (bottom of each mask) give a top-down map. On each beat where the crew holds a formation (not walking to a new one), it checks spacing to neighbors and, when the crew is in a line, distance from it. The line fit ignores dancers who are off it.
 5. **Score:** dancer score = 0.6 timing + 0.4 formation. The crew score is the mean.
 6. **Coaching:** Muse Spark turns the numbers into 3 to 5 fixes as structured JSON. If Muse is unavailable, the notes are built from the numbers and labelled as such.
 7. **Share:** a 20 s, 9:16 Sync Score Reel with the score reveal, the worst moment and the crew with outlines. It shows only the crew number and never names a dancer.
+8. **Before and after:** pick an earlier take on the results page to see the crew score and each named dancer's change.
 
 | Meta model | Job |
 | --- | --- |
@@ -48,7 +49,7 @@ Every dancer was within 25 ms at every shift. Our first method, the motion peak 
 - On these professional crews, 65% of scored beats fall within ±100 ms of the crew. We don't know yet how much of the rest is real and how much is measurement noise; hand-labelled clips will tell.
 - 70% of dancer-beats are scored. A beat is skipped when that dancer is untracked or their movement doesn't match the crew's (different choreography, occlusion).
 - Formation uses raw screen depth with no perspective correction, so back-row spacing reads smaller than it is.
-
+- Formation assumes even spacing. Staggered rows and V shapes score low even when danced well: on DanceTrack, line-based clips score 83 to 90, other clips 53 to 64. Comparing against a reference take (stretch goal) fixes this.
 ## Run it
 
 Needs Python 3.11 and Node 18+. ffmpeg comes from the `imageio-ffmpeg` package.

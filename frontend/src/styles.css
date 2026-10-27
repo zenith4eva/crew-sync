@@ -62,4 +62,13 @@ input, select { background: #0f1218; border: 1px solid var(--line); border-radiu
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
 .bpm { margin-top: 12px; }
 .bpm input { width: 80px; }
+.compare-pick { display: grid; gap: 4px; }
+.compare-hero { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.compare-hero .big { font-size: 64px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+.compare-hero .muted-num { color: var(--muted); }
+.compare-hero .arrow { font-size: 36px; color: var(--muted); }
+.delta-big { font-size: 32px; font-weight: 700; }
+.up { color: #3ddc84; }
+.down { color: var(--error); }
+a { color: var(--accent); }
 .notes { margin: 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.45; }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, Results, Status } from './api';
+import { loadTakes, takeLabel } from './takes';
 
 const COLORS = ['#ff5d5d', '#3ddc84', '#4c8dff', '#ffc53d', '#d36bff', '#2fd3d3', '#ff8a3d', '#a3e635',
   '#f472b6', '#94a3b8', '#facc15', '#60a5fa', '#34d399', '#fb7185', '#c084fc', '#fdba74'];
@@ -76,6 +77,7 @@ export default function ResultsView({ id, status, onDelete }: { id: string; stat
           <div className="big">{pct(res.crew_score)}</div>
         </div>
         {lowest && <p>Most to gain: <b style={{ color: color(lowest) }}>{label(lowest)}</b> ({pct(res.dancers[lowest].score)})</p>}
+        <CompareWith id={id} />
         <div className="row actions">
           <button className="primary" disabled={!!busy} onClick={exportReel}>{busy === 'reel' ? 'Rendering reel…' : 'Export Sync Score Reel'}</button>
           <button className="ghost" onClick={onDelete}>Delete video</button>
@@ -142,6 +144,20 @@ export default function ResultsView({ id, status, onDelete }: { id: string; stat
         </section>
       </div>
     </div>
+  );
+}
+
+function CompareWith({ id }: { id: string }) {
+  const others = loadTakes().filter(t => t.id !== id);
+  if (!others.length) return null;
+  return (
+    <label className="compare-pick">
+      <span className="muted small">Compare with an earlier take</span>
+      <select value="" onChange={e => { if (e.target.value) location.hash = `compare=${e.target.value},${id}`; }}>
+        <option value="">Choose a take…</option>
+        {others.map(t => <option key={t.id} value={t.id}>{takeLabel(t)}</option>)}
+      </select>
+    </label>
   );
 }
 
