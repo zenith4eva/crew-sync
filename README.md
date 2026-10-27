@@ -1,3 +1,6 @@
+
+https://github.com/user-attachments/assets/9f2283c5-596b-4356-949f-4f00c0d64d32
+
 <p align="center">
   <img src="docs/banner.svg" alt="Crew Sync: who is out of step, where the formation breaks, and one score to share" width="100%">
 </p>
