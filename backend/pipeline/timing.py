@@ -70,6 +70,14 @@ def offsets(motion: dict, beats: np.ndarray, fps: float, refs: dict | None = Non
     return out
 
 
+def _run_offset(run: np.ndarray) -> float:
+    """A run's offset: its median, or, when it swings early and late, the median-sized offset with its own sign.
+    A plain median of a swinging run nearly cancels out (+150 and -112 ms read as 19 ms late)."""
+    if np.all(run > 0) or np.all(run < 0):
+        return float(np.median(run))
+    return float(run[np.argsort(np.abs(run))[len(run) // 2]])
+
+
 def flags(offs: dict, beats: np.ndarray) -> list[dict]:
     """Runs of FLAG_MIN_RUN+ consecutive beats off by more than FLAG_TOL_S."""
     out = []
@@ -85,7 +93,7 @@ def flags(offs: dict, beats: np.ndarray) -> list[dict]:
                 e += 1
             if e - b + 1 >= config.FLAG_MIN_RUN:
                 out.append({"dancer": i, "start_beat": b, "end_beat": e, "time_s": float(beats[b]),
-                            "offset_ms": round(float(np.median(o[b:e + 1])) * 1000)})
+                            "offset_ms": round(_run_offset(o[b:e + 1]) * 1000)})
             b = e + 1
     return sorted(out, key=lambda x: x["time_s"])
 

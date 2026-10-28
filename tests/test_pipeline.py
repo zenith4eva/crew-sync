@@ -190,3 +190,10 @@ def test_crop_iou():
     assert tracks.crop_iou((0, 0, m), (0, 0, m)) == 1.0
     assert tracks.crop_iou((0, 0, m), (5, 0, m)) == pytest.approx(50 / 150)
     assert tracks.crop_iou((0, 0, m), (20, 0, m)) == 0.0
+
+
+def test_flag_offset_keeps_size_when_run_swings_sign():
+    from backend.pipeline import timing
+    beats = np.arange(6) * 0.5
+    f = timing.flags({"0": np.array([0.0, 0.0, -0.13, 0.17, 0.0, 0.0])}, beats)
+    assert len(f) == 1 and abs(f[0]["offset_ms"]) >= 130, f

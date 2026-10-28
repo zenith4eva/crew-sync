@@ -348,7 +348,7 @@ function FlagList({ res, pick, picked, label, color }: {
         </li>
       ))}
       {!res.flags.length && <li className="faint">No flagged moments: every dancer stayed within 120 ms of the crew.</li>}
-      {res.flags.length > shown.length && <li className="faint small">The {shown.length} biggest of {res.flags.length} flagged moments; the rest are on the strip.</li>}
+      {res.flags.length > shown.length && <li className="faint small" style={{ display: 'block', padding: '8px 12px' }}>The {shown.length} biggest of {res.flags.length} flagged moments; the rest are on the strip.</li>}
     </ul>
   );
 }
