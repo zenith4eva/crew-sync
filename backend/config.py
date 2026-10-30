@@ -46,6 +46,11 @@ FLAG_TOL_S = 0.120         # flag only beyond this (scoring keeps TIMING_TOL_S);
 TIMING_MAX_LAG_S = 0.35    # largest offset we search for; a dancer further off reads as different choreography
 TIMING_MIN_CORR = 0.5      # below this a dancer's movement doesn't match the crew's; that beat isn't scored
 TIMING_WINDOW_BEATS = 2    # correlate over this many beats either side; DanceTrack sweep (Oct 27): 1 was too noisy
+TIMING_MIN_VALID = 0.5     # share of a beat's window that must be tracked (and not overlapped) to time that beat
+OVERLAP_MAX = 0.7          # don't time frames where another dancer's box covers more than this of a dancer's box.
+                           # Oct 30, vs off: flag_test 150 ms caught 71% -> 71%, 250 ms 68% -> 62%, other flags
+                           # 4.4 -> 4.1/dancer-min; shift_test unchanged; I.O.I 44 -> 31 flags, 8 of the 10 largest
+                           # (all judged false by eye) gone, the one judged real kept
 
 # Formation (distances are in dancer heights, so camera distance doesn't matter)
 SPACING_TOL = 0.35         # nearest-neighbor gap may differ from the crew median gap by this fraction

@@ -197,3 +197,16 @@ def test_flag_offset_keeps_size_when_run_swings_sign():
     beats = np.arange(6) * 0.5
     f = timing.flags({"0": np.array([0.0, 0.0, -0.13, 0.17, 0.0, 0.0])}, beats)
     assert len(f) == 1 and abs(f[0]["offset_ms"]) >= 130, f
+
+
+def test_overlapped_marks_covered_frames_only(monkeypatch):
+    monkeypatch.setattr(tracks.config, "OVERLAP_MAX", 0.7)
+    box = lambda *b: np.array([b, b, b], float)
+    trk = {"a": {"box": box(0, 0, 10, 20), "motion": np.zeros(3)},
+           "b": {"box": box(0, 0, 10, 20), "motion": np.zeros(3)},
+           "c": {"box": box(50, 0, 60, 20), "motion": np.zeros(3)}}
+    trk["b"]["box"][1:] = [100, 0, 110, 20]  # b walks away after frame 0
+    trk["c"]["box"][2] = np.nan  # untracked frame isn't an overlap
+    hid = tracks.overlapped(trk)
+    assert hid["a"].tolist() == [True, False, False]
+    assert hid["c"].tolist() == [False, False, False]

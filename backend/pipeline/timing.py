@@ -55,7 +55,7 @@ def offsets(motion: dict, beats: np.ndarray, fps: float, refs: dict | None = Non
             for j, lag in enumerate(range(-max_lag, max_lag + 1)):
                 seg = x[lo + lag:hi + lag]
                 ok = ~np.isnan(seg) & ~np.isnan(r)
-                if ok.mean() >= 0.8 and seg[ok].std() > 0 and r[ok].std() > 0:
+                if ok.mean() >= config.TIMING_MIN_VALID and seg[ok].std() > 0 and r[ok].std() > 0:
                     corr[j] = np.corrcoef(seg[ok], r[ok])[0, 1]
             if np.all(np.isnan(corr)) or np.nanmax(corr) < config.TIMING_MIN_CORR:
                 continue

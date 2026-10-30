@@ -51,7 +51,26 @@ def load(jsonl: Path, n_dancers: int, swaps=()) -> tuple[dict, int]:
                 by_id[relabel(rec["id"], rec["f"], swaps)][rec["f"]] = rec
                 n_frames = max(n_frames, rec["f"] + 1)
     keep = sorted(by_id, key=lambda i: len(by_id[i]), reverse=True)[:n_dancers]
-    return {i: build_track(by_id[i], n_frames) for i in keep}, n_frames
+    trk = {i: build_track(by_id[i], n_frames) for i in keep}
+    for i, hidden in overlapped(trk).items():
+        trk[i]["motion"][hidden] = np.nan  # a mask that overlaps a neighbor moves with them; don't time it
+    return trk, n_frames
+
+
+def overlapped(trk: dict) -> dict:
+    """{dancer: bool per frame}, True where another dancer's box covers more than OVERLAP_MAX of this one's.
+    Checking flags by eye (I.O.I, Oct 29), 4 of the 10 largest came from masks merging with a neighbor's."""
+    ids = list(trk)
+    if len(ids) < 2:
+        return {i: np.zeros(len(trk[i]["motion"]), bool) for i in ids}
+    b = np.stack([trk[i]["box"] for i in ids])  # (dancers, frames, 4)
+    w = np.minimum(b[:, None, :, 2], b[None, :, :, 2]) - np.maximum(b[:, None, :, 0], b[None, :, :, 0])
+    h = np.minimum(b[:, None, :, 3], b[None, :, :, 3]) - np.maximum(b[:, None, :, 1], b[None, :, :, 1])
+    area = (b[..., 2] - b[..., 0]) * (b[..., 3] - b[..., 1])
+    with np.errstate(invalid="ignore", divide="ignore"):
+        cover = np.clip(w, 0, None) * np.clip(h, 0, None) / area[:, None, :]
+    cover[np.arange(len(ids)), np.arange(len(ids))] = 0
+    return {i: np.nan_to_num(cover[k]).max(axis=0) > config.OVERLAP_MAX for k, i in enumerate(ids)}
 
 
 def build_track(frames: dict, n_frames: int) -> dict:
