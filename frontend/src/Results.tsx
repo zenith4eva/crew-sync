@@ -13,7 +13,8 @@ const pct = (v: number | null) => (v === null ? '–' : Math.round(v).toString()
 const TOL_MS = 100; // config.TIMING_TOL_S
 // Biggest problems first: how far off, times how many beats in a row.
 const cost = (f: Flag) => Math.abs(f.offset_ms) * (f.end_beat - f.start_beat + 1);
-const biggest = (flags: Flag[]) => [...flags].sort((a, b) => cost(b) - cost(a));
+// Flags while the crew walked between formations rank last: hand labels found those mostly wrong.
+const biggest = (flags: Flag[]) => [...flags].sort((a, b) => Number(!!a.moving) - Number(!!b.moving) || cost(b) - cost(a));
 
 export default function ResultsView({ id, status, onDelete }: { id: string; status: Status; onDelete: () => void }) {
   const [res, setRes] = useState<Results | null>(null);
@@ -344,7 +345,8 @@ function FlagList({ res, pick, picked, label, color }: {
           <button className="link when" onClick={e => { e.stopPropagation(); pick(f); }}>{mmss(f.time_s)}</button>
           <span className="what"><span className="dot" style={{ background: color(f.dancer), marginRight: 8 }} /><b>{label(f.dancer)}</b>
             <span className="muted"> for {f.end_beat - f.start_beat + 1} beats</span></span>
-          <span className="pill neg">{Math.abs(f.offset_ms)} ms {f.offset_ms > 0 ? 'late' : 'early'}</span>
+          <span className="pill neg" title={f.moving ? 'The crew was moving between formations here; this flag is less reliable.' : undefined}>
+            {Math.abs(f.offset_ms)} ms {f.offset_ms > 0 ? 'late' : 'early'}{f.moving ? ' · crew moving' : ''}</span>
         </li>
       ))}
       {!res.flags.length && <li className="faint">No flagged moments: every dancer stayed within 120 ms of the crew.</li>}

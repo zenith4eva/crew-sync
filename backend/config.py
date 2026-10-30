@@ -73,6 +73,10 @@ LINE_FIT_MAX = 0.20        # crew counts as "in a line" when 3 of 4 dancers are 
 LINE_TOL = 0.15            # a dancer this far off the line is out of formation
 MIN_DANCERS_FORMATION = 3
 HOLD_MAX_MOVE = 0.12       # crew feet moving more than this (dancer heights per beat) = transition, not scored
+FLAG_MOVING = 0.15         # a timing flag is tagged "while the crew was moving" when the crew's feet moved more
+                           # than this (heights) over its beats. Hand labels on DanceTrack 0007 (Oct 30): both real
+                           # flags at <= 0.12, 5 of 7 wrong ones at >= 0.18. A tag, not a filter: dropping those flags
+                           # also drops injected delays (flag_test 76% caught -> 18%).
 MAX_RELIABLE_DANCERS = 9   # DanceTrack gate (Oct 27): 12 dancers gave 6 lasting identity switches in 30 s
 
 # Reference take (stretch 1)

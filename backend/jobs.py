@@ -266,7 +266,7 @@ def make_notes(res: dict, names: dict) -> tuple[list, str]:
 
 def template_notes(res: dict, name) -> list[dict]:
     notes = []
-    for f in sorted(res["flags"], key=lambda f: -abs(f["offset_ms"]))[:3]:
+    for f in sorted(res["flags"], key=lambda f: (f.get("moving", False), -abs(f["offset_ms"])))[:3]:
         word = "late" if f["offset_ms"] > 0 else "early"
         notes.append({"dancer": name(f["dancer"]), "time_s": f["time_s"],
                       "text": f"{name(f['dancer'])} is {abs(f['offset_ms'])} ms {word} at {_mmss(f['time_s'])}. "

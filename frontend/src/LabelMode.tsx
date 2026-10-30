@@ -83,7 +83,7 @@ export default function LabelMode({ id, ids, flags, beats, label, color, video }
           return (
             <li key={i}>
               <button className="link when" onClick={() => { if (video.current) video.current.currentTime = Math.max(f.time_s - 1, 0); }}>{mmss(f.time_s)}</button>
-              <span className="what"><span className="dot" style={{ background: color(f.dancer), marginRight: 8 }} />{label(f.dancer)} {Math.abs(f.offset_ms)} ms {f.offset_ms > 0 ? 'late' : 'early'}</span>
+              <span className="what"><span className="dot" style={{ background: color(f.dancer), marginRight: 8 }} />{label(f.dancer)} {Math.abs(f.offset_ms)} ms {f.offset_ms > 0 ? 'late' : 'early'}{f.moving ? <span className="muted"> · crew moving</span> : null}</span>
               <span className="row" style={{ gap: 6 }}>
                 <button className={v && v !== 'wrong' ? '' : 'ghost'} onClick={() => judge(f, f.offset_ms > 0 ? 'late' : 'early')}>Real</button>
                 <button className={v === 'wrong' ? '' : 'ghost'} onClick={() => judge(f, 'wrong')}>Wrong</button>

@@ -41,7 +41,7 @@ def render(job: Path, res: dict, out: Path) -> Path:
     score = res["crew_score"] or 0
     duration = res["n_frames"] / fps
 
-    worst = max(res["flags"], key=lambda f: abs(f["offset_ms"]), default=None)
+    worst = min(res["flags"], key=lambda f: (f.get("moving", False), -abs(f["offset_ms"])), default=None)
     segments = []  # (source start s, length s, kind)
     if worst:
         start = min(max(worst["time_s"] - 2, 0), max(duration - MOMENT_S, 0))

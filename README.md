@@ -28,7 +28,7 @@ https://github.com/user-attachments/assets/65bc6772-1c9b-4b11-807b-1d2c4e7d4912
 | | |
 | --- | --- |
 | **One crew score** | A Crew Sync Score out of 100 (0.6 timing, 0.4 formation), who has the most to gain, and the biggest miss in plain words. |
-| **Every dancer, every beat** | The sync strip: one lane per dancer, a tick per beat. Lime is with the crew, white is off it, a red band is a flagged moment. Click a band to jump the video there. |
+| **Every dancer, every beat** | The sync strip: one lane per dancer, a tick per beat. Lime is with the crew, white is off it, a red band is a flagged moment. Click a band to jump the video there. Flags raised while the crew walked between formations are tagged "crew moving" and ranked last. |
 | **The formation from above** | Feet positions on a top-down map, with drift since the last beat and who leaves their spot or the line. |
 | **Coaching notes** | Three to five fixes written by Muse Spark from the numbers, each tied to a dancer and a moment. |
 | **Before and after** | Pick an earlier take to see the crew score and every named dancer's change. |

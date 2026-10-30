@@ -13,6 +13,20 @@ def dancer_score(t: float, f: float, p: float | None = None) -> float:
     return sum(v * w for v, w in parts) / sum(w for _, w in parts) if parts else np.nan
 
 
+def _tag_moving(flags: list[dict], tracks: dict, beats: np.ndarray, fps: float) -> list[dict]:
+    """flag["moving"]: the crew walked between formations during the flag's beats. Those flags were mostly judged
+    wrong by hand (config.FLAG_MOVING); the UI and notes rank still ones first."""
+    n = len(next(iter(tracks.values()))["feet"])
+    bf = np.round(beats * fps).astype(int).clip(0, n - 1)
+    heights = np.concatenate([t["box"][:, 3] - t["box"][:, 1] for t in tracks.values()])
+    height = float(np.nanmedian(heights)) if np.any(~np.isnan(heights)) else 0.0
+    for f in flags:
+        b, e = f["start_beat"], f["end_beat"]
+        move = formation._crew_move(tracks, bf[b - 1] if b else bf[b], bf[e]) / height if height else 0.0
+        f["moving"] = bool(move >= config.FLAG_MOVING)
+    return flags
+
+
 def run(tracks: dict, beats: np.ndarray, fps: float, ref: dict | None = None, pose_beats: list | None = None) -> dict:
     """ref: optional {dancer: matched reference dancer's {motion, feet} on this clip's timeline}.
     pose_beats: optional per-beat pose.compare() output; turns on the pose part of the score."""
@@ -37,5 +51,6 @@ def run(tracks: dict, beats: np.ndarray, fps: float, ref: dict | None = None, po
     lowest = min((i for i in dancers if not np.isnan(dancers[i]["score"])),
                  key=lambda i: dancers[i]["score"], default=None)
     return {"crew_score": crew, "lowest_dancer": lowest, "dancers": dancers,
-            "flags": timing.flags(offs, beats), "formation_by_beat": per_beat, "beats": beats.tolist(),
+            "flags": _tag_moving(timing.flags(offs, beats), tracks, beats, fps), "formation_by_beat": per_beat,
+            "beats": beats.tolist(),
             "pose_flags": pose_flags if pose_beats is not None else None}

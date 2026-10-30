@@ -16,7 +16,7 @@ export type HandLabel = { dancer: string; time_s: number; kind: 'late' | 'early'
 export type LabelAgreement = {
   flags: number; labels: number; flags_agreed: number; flags_wrong: number; labels_caught: number; precision: number | null; recall: number | null;
 };
-export type Flag ={ dancer: string; start_beat: number; end_beat: number; time_s: number; offset_ms: number };
+export type Flag ={ dancer: string; start_beat: number; end_beat: number; time_s: number; offset_ms: number; moving?: boolean };
 export type Note = { dancer: string; time_s: number; text: string };
 export type Dancer = { timing: number | null; formation: number | null; pose?: number | null; score: number | null; offsets_ms: (number | null)[] };
 
