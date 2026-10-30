@@ -85,7 +85,7 @@ Then open `http://<your computer's IP>:8000` on the phone (on a Mac, `ipconfig g
 
 1. **Track:** SAM 3.1 (Meta Model API) segments every dancer with the prompt "person" and keeps each identity across the clip.
 2. **Beat grid:** librosa finds the beats in the audio. You can set the BPM and first beat by hand when rehearsal audio is noisy or missing.
-3. **Timing:** each dancer's motion signal (frame-to-frame mask change) is cross-correlated with the rest of the crew's around every beat. The lag is that dancer's offset. A crew that is late together still scores 100.
+3. **Timing:** each dancer's motion signal (the change in frame-to-frame mask movement, which peaks on the beat) is cross-correlated with the rest of the crew's around every beat. The lag is that dancer's offset. A crew that is late together still scores 100.
 4. **Formation:** feet points (bottom of each mask) give a top-down map. On each beat where the crew holds a formation (not walking to a new one), it checks that each dancer holds the spot they took at the start of that hold (overall shift and scale removed, so a V or staggered rows count as much as a line) and, when the crew is in a line, their distance from it. The line fit ignores dancers who are off it.
 5. **Score:** dancer score = 0.6 timing + 0.4 formation. The crew score is the mean.
 6. **Coaching:** Muse Spark turns the numbers into 3 to 5 fixes as structured JSON. If Muse is unavailable, the notes are built from the numbers and labelled as such.
@@ -132,11 +132,11 @@ Most raw switches are flips of 1 to 13 frames while two dancers overlap; they se
 
 Every dancer was within 25 ms at every shift. Our first method, the motion peak nearest each beat, measured 9 ms for a 100 ms shift on these real tracks and was replaced.
 
-**Flagging (flag test).** We delayed each of the 34 dancers in turn by 150 ms for 4 s at a random point, using real tracks. The app flagged the delay in 71% of trials (re-run October 30, 2026, after the tracking overlap fix). On these professional crews it also raised 4.1 other flags per dancer-minute; some may be real, so that's an upper bound on false alarms. Flags need two beats in a row more than 120 ms off. Longer runs, sign-consistent runs, smoothing across beats, a three-band motion signal and a per-dancer threshold scaled to each dancer's own offset spread all traded detection for fewer flags without beating this balance.
+**Flagging (flag test).** We delayed each of the 34 dancers in turn by 150 ms for 4 s at a random point, using real tracks. The app flagged the delay in 76% of trials (82% for a 250 ms delay; re-run October 30, 2026, after the tracking overlap fix and the switch to a differenced motion signal, which took this from 71% and 4.1 other flags). On these professional crews it also raised 1.6 other flags per dancer-minute; some may be real, so that's an upper bound on false alarms. Flags need two beats in a row more than 120 ms off. Longer runs, sign-consistent runs, smoothing across beats, a three-band motion signal and a per-dancer threshold scaled to each dancer's own offset spread all traded detection for fewer flags without beating this balance.
 
 **Limits we know about.**
-- On these professional crews, 65% of scored beats fall within ±100 ms of the crew. We don't know yet how much of the rest is real and how much is measurement noise; hand-labelled clips will tell.
-- 70% of dancer-beats are scored. A beat is skipped when that dancer is untracked or their movement doesn't match the crew's (different choreography, occlusion).
+- On these professional crews, 85% of scored beats fall within ±100 ms of the crew. We don't know yet how much of the rest is real and how much is measurement noise; hand-labelled clips will tell.
+- 63% of dancer-beats are scored. A beat is skipped when that dancer is untracked or their movement doesn't match the crew's (different choreography, occlusion).
 - Formation uses raw screen depth with no perspective correction, so back-row spacing reads smaller than it is.
 - Without a reference, formation only checks that each dancer holds their spot through a held formation and stays on the line when there is one. A dancer who settles in the wrong spot and holds it is not caught; scoring against a reference take is. An even-spacing check was tried and dropped (October 30): it failed 30% of professional dancer-beats on DanceTrack (pairs and asymmetric shapes are choreography), scoring the five clips 53 to 90 where the current check scores them 76 to 97.
 - Body pose is tested only against a stand-in for SAM 3D Body, because its weights are gated (see below). The keypoint indices and API come from the sam-3d-body source.

@@ -54,6 +54,7 @@ def load(jsonl: Path, n_dancers: int, swaps=()) -> tuple[dict, int]:
     trk = {i: build_track(by_id[i], n_frames) for i in keep}
     for i, hidden in overlapped(trk).items():
         trk[i]["motion"][hidden] = np.nan  # a mask that overlaps a neighbor moves with them; don't time it
+        trk[i]["motion"] = motion_signal(trk[i]["motion"])
     return trk, n_frames
 
 
@@ -99,7 +100,19 @@ def build_track(frames: dict, n_frames: int) -> dict:
         if prev is not None:
             motion[f] = 1.0 - crop_iou(prev, cur)
         prev = cur
-    return {"present": present, "box": box, "feet": feet, "motion": smooth(motion), "outline": outline}
+    return {"present": present, "box": box, "feet": feet, "motion": motion, "outline": outline}
+
+
+def motion_signal(change: np.ndarray) -> np.ndarray:
+    """Per-frame motion signal from mask change (1 - IoU with the previous frame, NaN where untracked or overlapped):
+    sqrt, smooth, then the frame-to-frame difference, smoothed again. Correlating the change in motion rather than
+    motion itself sharpens the beat peaks. Hide overlapped frames before this, not after: the difference then also
+    drops the first frame after each gap, which is a step, not motion. eval.flag_test, Oct 30, 150 ms delay: plain 71% caught / 4.1 false per dancer-min; sqrt alone 71% / 3.3;
+    difference alone 79% / 3.6; this 76% / 1.6 (250 ms: 62% / 4.1 -> 82% / 1.6; shift test error <= 1 ms).
+    Smoothing the difference over 3 frames instead of 2 gave 82% / 2.6. Scored dancer-beats 70% -> 63%; of those
+    within 100 ms of the crew 65% -> 85%."""
+    d = np.diff(smooth(np.sqrt(change), config.MOTION_SMOOTH_FRAMES), prepend=np.nan)
+    return smooth(d, config.MOTION_DIFF_SMOOTH_FRAMES)
 
 
 def silhouette(m: np.ndarray, rows: np.ndarray, x0: int, y0: int, samples: int = 24) -> list[int]:
@@ -111,11 +124,11 @@ def silhouette(m: np.ndarray, rows: np.ndarray, x0: int, y0: int, samples: int =
     return [v for p in left + right for v in p]
 
 
-def smooth(signal: np.ndarray) -> np.ndarray:
-    """Moving average that leaves gaps (NaN) as gaps."""
+def smooth(signal: np.ndarray, frames: int) -> np.ndarray:
+    """Moving average over this many frames that leaves gaps (NaN) as gaps."""
     valid = ~np.isnan(signal)
-    s = uniform_filter1d(np.where(valid, signal, 0.0), config.MOTION_SMOOTH_FRAMES, mode="nearest")
-    w = uniform_filter1d(valid.astype(float), config.MOTION_SMOOTH_FRAMES, mode="nearest")
+    s = uniform_filter1d(np.where(valid, signal, 0.0), frames, mode="nearest")
+    w = uniform_filter1d(valid.astype(float), frames, mode="nearest")
     out = np.divide(s, w, out=np.full_like(s, np.nan), where=w > 0)
     out[~valid] = np.nan
     return out

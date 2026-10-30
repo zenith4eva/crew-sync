@@ -51,12 +51,7 @@ def offsets(motion: dict, beats: np.ndarray, fps: float, refs: dict | None = Non
             r = ref[lo:hi]
             if np.isnan(r).mean() > 0.2:
                 continue
-            corr = np.full(2 * max_lag + 1, np.nan)
-            for j, lag in enumerate(range(-max_lag, max_lag + 1)):
-                seg = x[lo + lag:hi + lag]
-                ok = ~np.isnan(seg) & ~np.isnan(r)
-                if ok.mean() >= config.TIMING_MIN_VALID and seg[ok].std() > 0 and r[ok].std() > 0:
-                    corr[j] = np.corrcoef(seg[ok], r[ok])[0, 1]
+            corr = _lag_corr(x, r, lo, hi, max_lag)
             if np.all(np.isnan(corr)) or np.nanmax(corr) < config.TIMING_MIN_CORR:
                 continue
             j = int(np.nanargmax(corr))
@@ -68,6 +63,25 @@ def offsets(motion: dict, beats: np.ndarray, fps: float, refs: dict | None = Non
                 shift = 0.5 * (corr[j - 1] - corr[j + 1]) / denom if denom else 0.0
             out[i][b] = (j - max_lag + shift) / fps
     return out
+
+
+def _lag_corr(x: np.ndarray, r: np.ndarray, lo: int, hi: int, max_lag: int) -> np.ndarray:
+    """Pearson correlation of x[lo+lag:hi+lag] with r for every lag in [-max_lag, max_lag], over the frames where
+    both are tracked; NaN where fewer than TIMING_MIN_VALID of the window is, or either side is flat.
+    All lags at once: the per-lag np.corrcoef loop was most of the pipeline's CPU time."""
+    idx = np.arange(lo - max_lag, hi + max_lag)
+    seg = np.lib.stride_tricks.sliding_window_view(x[idx], hi - lo)  # (lags, window)
+    ok = ~np.isnan(seg) & ~np.isnan(r)[None]
+    cnt = ok.sum(axis=1)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        s = np.where(ok, seg, 0.0)
+        rr = np.where(ok, r[None], 0.0)
+        ms, mr = s.sum(axis=1) / cnt, rr.sum(axis=1) / cnt
+        ds = np.where(ok, s - ms[:, None], 0.0)
+        dr = np.where(ok, rr - mr[:, None], 0.0)
+        corr = (ds * dr).sum(axis=1) / np.sqrt((ds ** 2).sum(axis=1) * (dr ** 2).sum(axis=1))
+    corr[(cnt < config.TIMING_MIN_VALID * (hi - lo)) | ~np.isfinite(corr)] = np.nan
+    return corr
 
 
 def _run_offset(run: np.ndarray) -> float:
