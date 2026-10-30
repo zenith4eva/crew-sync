@@ -52,6 +52,8 @@ TIMING_MIN_CORR = 0.5      # below this a dancer's movement doesn't match the cr
                            # Oct 30 sweep with the differenced signal (flag_test 150 ms caught / other flags per
                            # dancer-min): 0.3 85% / 2.7, 0.4 82% / 2.3, 0.5 76% / 1.6, 0.6 68% / 0.7. Same frontier for
                            # OVERLAP_MAX 0.8-1.1, FLAG_TOL_S 0.10-0.14, FLAG_MIN_RUN 3 and TIMING_WINDOW_BEATS 1.5-3.
+                           # Also no gain: flagging only beats whose correlation peak is >= 0.6 (68% / 0.7, same
+                           # frontier), or by transition: flagged beats are 51% transitions vs 43% of all scored beats.
 TIMING_WINDOW_BEATS = 2    # correlate over this many beats either side; DanceTrack sweep (Oct 27): 1 was too noisy
 TIMING_MIN_VALID = 0.5     # share of a beat's window that must be tracked (and not overlapped) to time that beat
 OVERLAP_MAX = 0.7          # don't time frames where another dancer's box covers more than this of a dancer's box.
