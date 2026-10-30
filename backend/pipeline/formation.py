@@ -38,10 +38,12 @@ def _robust_line_dist(p: np.ndarray) -> np.ndarray:
 
 
 def _crew_move(tracks: dict, f0: int, f1: int) -> float:
-    """Median distance (px) dancers' feet moved between two frames; 0 if nobody is tracked in both."""
-    d = [np.linalg.norm(t["feet"][f1] - t["feet"][f0]) for t in tracks.values()]
+    """How far (px) the crew's feet moved between two frames: the upper median, so it stays near 0 unless more
+    than half the dancers moved (a plain median of 4 with one mover averages them in and reads as a transition).
+    0 if nobody is tracked in both."""
+    d = sorted(np.linalg.norm(t["feet"][f1] - t["feet"][f0]) for t in tracks.values())
     d = [x for x in d if not np.isnan(x)]
-    return float(np.median(d)) if d else 0.0
+    return float(d[len(d) // 2]) if d else 0.0
 
 
 def normalize(p: np.ndarray) -> np.ndarray | None:
@@ -67,6 +69,20 @@ def reference_beat_ok(points: dict, ref_points: dict, height: float, tol: float 
     return {i: bool(e <= tol) for i, e in zip(ids, err)}
 
 
+def hold_ok(points: dict, anchor: dict, height: float) -> dict:
+    """Each dancer vs their own spot on the hold's first beat. The crew's shift since then is the median move of the
+    OTHER dancers (so the one who moved can't hide in the centroid); no scale change, the camera doesn't zoom."""
+    ids = [i for i in points if i in anchor and not np.isnan(points[i]).any() and not np.isnan(anchor[i]).any()]
+    if len(ids) < config.MIN_DANCERS_FORMATION or not height > 0:
+        return {}
+    move = np.array([points[i] - anchor[i] for i in ids])
+    out = {}
+    for k, i in enumerate(ids):
+        crew = np.median(np.delete(move, k, axis=0), axis=0)
+        out[i] = bool(np.linalg.norm(move[k] - crew) / height <= config.HOLD_TOL)
+    return out
+
+
 def scores(tracks: dict, beat_frames: np.ndarray, ref_feet: dict | None = None) -> tuple[dict, list[dict]]:
     """Returns ({dancer: formation score 0-100 or NaN}, per-beat {dancer: ok} for the formation map).
     ref_feet: optional {dancer: matched reference dancer's feet on this clip's timeline}. With it, every beat is
@@ -88,7 +104,7 @@ def scores(tracks: dict, beat_frames: np.ndarray, ref_feet: dict | None = None) 
         ok = beat_ok(points, height)
         if ok and anchor:
             # Shape stability: each dancer vs their own spot on the first beat of this hold.
-            held = reference_beat_ok(points, anchor, height, config.HOLD_TOL)
+            held = hold_ok(points, anchor, height)
             ok = {i: v and held.get(i, True) for i, v in ok.items()}
         anchor = anchor or (points if ok else None)
         per_beat.append(ok)

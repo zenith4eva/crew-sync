@@ -60,11 +60,13 @@ OVERLAP_MAX = 0.7          # don't time frames where another dancer's box covers
                            # (all judged false by eye) gone, the one judged real kept
 
 # Formation (distances are in dancer heights, so camera distance doesn't matter)
-HOLD_TOL = 0.20            # max drift from a dancer's own spot during a held formation, in dancer heights.
-                           # Oct 30 sweep on DanceTrack (5 clips): 0.10 scored pro crews 54-93, 0.15 65-96, 0.20 76-97;
-                           # a 0.3-height sideways shove for 4 s was caught about equally (32-38%). The old even-spacing
-                           # check (tol 0.35) caught 56% of those shoves but scored the same pros 52-86; relaxing it
-                           # to 1.0 gave 73-94 and 35%, no better than none. Dropped.
+HOLD_TOL = 0.25            # max drift from a dancer's own spot during a held formation, in dancer heights.
+                           # Oct 30 on DanceTrack (5 clips), crew shift = median move of the other dancers: 0.15 scored
+                           # pro crews 62-90, 0.20 70-95, 0.25 78-96. A 0.3-height sideways shove that starts inside a
+                           # hold is caught 12 of 13 times (eval.formation_check); one that starts during a transition
+                           # becomes the new spot (not catchable without a reference take). Smoothing feet over 3-9 frames didn't help.
+                           # The old even-spacing check (tol 0.35) scored the same pros 52-86; relaxing it to 1.0 gave
+                           # 73-94 with no gain in shove detection. Dropped.
 LINE_FIT_MAX = 0.20        # crew counts as "in a line" when 3 of 4 dancers are closer than this to the fitted line
 LINE_TOL = 0.15            # a dancer this far off the line is out of formation
 MIN_DANCERS_FORMATION = 3
