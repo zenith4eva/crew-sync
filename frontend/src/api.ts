@@ -12,9 +12,9 @@ export type Status = {
   reference?: { state: 'queued' | 'running' | 'scoring' | 'done' | 'failed'; error?: string | null; mirror?: boolean; lag_s?: number } | null;
 };
 
-export type HandLabel = { dancer: string; time_s: number; kind: 'late' | 'early' };
+export type HandLabel = { dancer: string; time_s: number; kind: 'late' | 'early' | 'wrong' };
 export type LabelAgreement = {
-  flags: number; labels: number; flags_agreed: number; labels_caught: number; precision: number | null; recall: number | null;
+  flags: number; labels: number; flags_agreed: number; flags_wrong: number; labels_caught: number; precision: number | null; recall: number | null;
 };
 export type Flag ={ dancer: string; start_beat: number; end_beat: number; time_s: number; offset_ms: number };
 export type Note = { dancer: string; time_s: number; text: string };

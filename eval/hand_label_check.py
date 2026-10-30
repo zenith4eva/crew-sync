@@ -3,8 +3,9 @@
 Easiest: open the job, turn on "Hand-label this clip" on the results page and mark moments with L / E. Then:
     python -m eval.hand_label_check <job_id>
 
-Or from a file (eval/hand_labels/<anything>.json), using the names shown on the results page:
-    [{"dancer": "Mina", "time_s": 42.1, "kind": "late"}, {"dancer": "Dancer 3", "time_s": 50.0, "kind": "early"}]
+Or from a file (eval/hand_labels/<anything>.json), using the names shown on the results page. kind "wrong" at a
+flag's time marks that flag as false:
+    [{"dancer": "Mina", "time_s": 42.1, "kind": "late"}, {"dancer": "Dancer 3", "time_s": 50.0, "kind": "wrong"}]
     python -m eval.hand_label_check <job_id> eval/hand_labels/clip1.json
 """
 import json
@@ -27,7 +28,8 @@ def main() -> None:
         labels = json.loads((d / "labels.json").read_text(encoding="utf-8"))
     r = agreement(res["flags"], res["beats"], labels)
     pct = lambda v: "n/a" if v is None else f"{v:.0%}"
-    print(f"{r['flags_agreed']}/{r['flags']} app flags match a hand label (precision {pct(r['precision'])})")
+    print(f"{r['flags_agreed']} of {r['flags']} app flags judged real, {r['flags_wrong']} judged wrong, "
+          f"{r['flags'] - r['flags_agreed'] - r['flags_wrong']} not judged (precision {pct(r['precision'])})")
     print(f"{r['labels_caught']}/{r['labels']} hand labels caught by the app (recall {pct(r['recall'])})")
 
 

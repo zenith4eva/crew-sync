@@ -179,7 +179,7 @@ Evaluation (DanceTrack val unzipped into `data/dancetrack/val`):
 
 The shift and flag tests read the clip list the last gate run wrote, so run the 5-clip gate (cached, free) before them.
 
-Hand labels: open a processed clip, expand "Hand-label this clip", play at quarter speed and press `L` or `E` when a dancer is visibly late or early (`1`–`9` picks the dancer). The panel shows agreement live; for the README numbers run:
+Hand labels: open a processed clip, expand "Hand-label this clip", play at quarter speed and press `L` or `E` when a dancer is visibly late or early (`1`–`9` picks the dancer). The panel also lists the app's flags with Real / Wrong buttons, so precision counts only the flags you judged. It shows agreement live; for the README numbers run:
 
 ```bash
 .venv/Scripts/python -m eval.hand_label_check <job_id>

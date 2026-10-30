@@ -198,7 +198,7 @@ export default function ResultsView({ id, status, onDelete }: { id: string; stat
             </details>
             <FixSwap ids={ids} label={label} t={t} busy={busy === 'swap'}
               onSwap={(a, b) => run('swap', () => api.fixSwap(id, frame, a, b))} />
-            <LabelMode id={id} ids={ids} label={label} color={color} video={video} />
+            <LabelMode id={id} ids={ids} flags={res.flags} beats={res.beats} label={label} color={color} video={video} />
             <ReferencePanel id={id} res={res} ids={ids} label={label} color={color}
               onResults={r => { setRes(r); api.status(id).then(s => setWarnings(s.warnings), () => {}); }} />
           </section>

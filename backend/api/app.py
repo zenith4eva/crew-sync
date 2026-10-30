@@ -215,7 +215,7 @@ def settings(job_id: str, s: Settings):
 class Label(BaseModel):
     dancer: str
     time_s: float = Field(ge=0)
-    kind: Literal["late", "early"]
+    kind: Literal["late", "early", "wrong"]  # wrong: the app's flag on this dancer at this time is false
 
 
 def _labels_response(d: Path) -> dict:

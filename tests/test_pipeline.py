@@ -157,8 +157,11 @@ def test_hand_label_agreement():
               {"dancer": "1", "time_s": 15.2, "kind": "late"},    # wrong direction
               {"dancer": "10", "time_s": 3.0, "kind": "early"}]   # app missed it
     r = agreement(flags, beats, labels)
-    assert (r["flags_agreed"], r["labels_caught"]) == (1, 1)
-    assert r["precision"] == 0.5 and r["recall"] == pytest.approx(1 / 3)
+    assert (r["flags_agreed"], r["flags_wrong"], r["labels_caught"]) == (1, 0, 1)
+    assert r["precision"] == 1.0 and r["recall"] == pytest.approx(1 / 3)  # the second flag is unjudged
+    r = agreement(flags, beats, labels + [{"dancer": "1", "time_s": 15.0, "kind": "wrong"}])
+    assert (r["flags_agreed"], r["flags_wrong"], r["labels"]) == (1, 1, 3) and r["precision"] == 0.5
+    assert agreement(flags, beats, [{"dancer": "7", "time_s": 8.7, "kind": "wrong"}])["precision"] == 0.0
 
 
 def _skeleton(arm_deg=0.0, yaw_deg=0.0, shift=(0, 0, 0)):

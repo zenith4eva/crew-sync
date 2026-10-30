@@ -1,13 +1,15 @@
 import { RefObject, useEffect, useState } from 'react';
-import { api, HandLabel, LabelAgreement } from './api';
+import { api, Flag, HandLabel, LabelAgreement } from './api';
+
+const TOLERANCE_S = 0.5; // same as backend/pipeline/labels.py
 
 const mmss = (t: number) => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
 const pct = (v: number | null) => (v === null ? '–' : `${Math.round(v * 100)}%`);
 
 // Evaluation helper (PRD: hand labels on 3 clips). Watch at quarter speed and press L or E the moment a dancer is
 // visibly late or early; the app's flags are scored against these labels.
-export default function LabelMode({ id, ids, label, color, video }: {
-  id: string; ids: string[]; label: (d: string) => string; color: (d: string) => string;
+export default function LabelMode({ id, ids, flags, beats, label, color, video }: {
+  id: string; ids: string[]; flags: Flag[]; beats: number[]; label: (d: string) => string; color: (d: string) => string;
   video: RefObject<HTMLVideoElement>;
 }) {
   const [open, setOpen] = useState(false);
@@ -42,6 +44,15 @@ export default function LabelMode({ id, ids, label, color, video }: {
     return () => removeEventListener('keydown', onKey);
   });
 
+  // Verdict on one of the app's flags: Real adds a late/early label at its time, Wrong adds a "wrong" one.
+  const verdictOf = (f: Flag) => labels.find(l => l.dancer === f.dancer &&
+    l.time_s >= beats[f.start_beat] - TOLERANCE_S && l.time_s <= beats[f.end_beat] + TOLERANCE_S &&
+    (l.kind === 'wrong' || l.kind === (f.offset_ms > 0 ? 'late' : 'early')));
+  const judge = (f: Flag, kind: HandLabel['kind']) => {
+    const rest = labels.filter(l => l !== verdictOf(f));
+    save([...rest, { dancer: f.dancer, time_s: f.time_s, kind }].sort((a, b) => a.time_s - b.time_s));
+  };
+
   const toggleSlow = () => {
     if (!video.current) return;
     video.current.playbackRate = slow ? 1 : 0.25;
@@ -60,10 +71,27 @@ export default function LabelMode({ id, ids, label, color, video }: {
         </select>
       </div>
       {err && <p className="error">{err}</p>}
-      {agree && agree.labels > 0 && (
-        <p className="small">App flags you agree with: <b>{agree.flags_agreed}/{agree.flags}</b> ({pct(agree.precision)}) ·
+      {agree && (agree.labels > 0 || agree.flags_wrong > 0) && (
+        <p className="small">App flags judged real: <b>{agree.flags_agreed}</b>, wrong: <b>{agree.flags_wrong}</b>, not yet judged:
+          {' '}<b>{agree.flags - agree.flags_agreed - agree.flags_wrong}</b> (precision {pct(agree.precision)}) ·
           {' '}your labels the app caught: <b>{agree.labels_caught}/{agree.labels}</b> ({pct(agree.recall)})</p>
       )}
+      {flags.length > 0 && <p className="muted" style={{ marginBottom: 4 }}>The app's flags. Jump to each, watch at quarter speed, judge it.</p>}
+      <ul className="flags" style={{ marginTop: 0 }}>
+        {flags.map((f, i) => {
+          const v = verdictOf(f)?.kind;
+          return (
+            <li key={i}>
+              <button className="link when" onClick={() => { if (video.current) video.current.currentTime = Math.max(f.time_s - 1, 0); }}>{mmss(f.time_s)}</button>
+              <span className="what"><span className="dot" style={{ background: color(f.dancer), marginRight: 8 }} />{label(f.dancer)} {Math.abs(f.offset_ms)} ms {f.offset_ms > 0 ? 'late' : 'early'}</span>
+              <span className="row" style={{ gap: 6 }}>
+                <button className={v && v !== 'wrong' ? '' : 'ghost'} onClick={() => judge(f, f.offset_ms > 0 ? 'late' : 'early')}>Real</button>
+                <button className={v === 'wrong' ? '' : 'ghost'} onClick={() => judge(f, 'wrong')}>Wrong</button>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
       <ul className="flags" style={{ marginTop: 0 }}>
         {labels.map((l, i) => (
           <li key={i}>
