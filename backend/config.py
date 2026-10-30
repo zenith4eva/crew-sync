@@ -56,8 +56,12 @@ OVERLAP_MAX = 0.7          # don't time frames where another dancer's box covers
                            # (all judged false by eye) gone, the one judged real kept
 
 # Formation (distances are in dancer heights, so camera distance doesn't matter)
-SPACING_TOL = 0.35         # nearest-neighbor gap may differ from the crew median gap by this fraction
-LINE_FIT_MAX = 0.20        # crew counts as "in a line" when RMS distance from the fitted line is below this
+HOLD_TOL = 0.20            # max drift from a dancer's own spot during a held formation, in dancer heights.
+                           # Oct 30 sweep on DanceTrack (5 clips): 0.10 scored pro crews 54-93, 0.15 65-96, 0.20 76-97;
+                           # a 0.3-height sideways shove for 4 s was caught about equally (32-38%). The old even-spacing
+                           # check (tol 0.35) caught 56% of those shoves but scored the same pros 52-86; relaxing it
+                           # to 1.0 gave 73-94 and 35%, no better than none. Dropped.
+LINE_FIT_MAX = 0.20        # crew counts as "in a line" when 3 of 4 dancers are closer than this to the fitted line
 LINE_TOL = 0.15            # a dancer this far off the line is out of formation
 MIN_DANCERS_FORMATION = 3
 HOLD_MAX_MOVE = 0.12       # crew feet moving more than this (dancer heights per beat) = transition, not scored

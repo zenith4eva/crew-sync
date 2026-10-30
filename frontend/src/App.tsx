@@ -161,7 +161,7 @@ function Preview() {
       <ul className="gets">
         <li><b>A Crew Sync Score</b> out of 100, and who has the most to gain.</li>
         <li><b>Every dancer's timing</b> against the rest of the crew, beat by beat, with the moments to fix.</li>
-        <li><b>The formation from above</b>, and where spacing breaks.</li>
+        <li><b>The formation from above</b>, and who leaves their spot.</li>
         <li><b>Coaching notes</b> written by Muse Spark, and a 20-second Reel to share.</li>
       </ul>
     </section>

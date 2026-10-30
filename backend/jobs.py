@@ -274,7 +274,7 @@ def template_notes(res: dict, name) -> list[dict]:
     weak = [(i, v["formation"]) for i, v in res["dancers"].items() if not np.isnan(v["formation"]) and v["formation"] < 70]
     for i, fscore in sorted(weak, key=lambda x: x[1])[:2]:
         notes.append({"dancer": name(i), "time_s": 0, "text": f"{name(i)} is out of formation on "
-                      f"{round(100 - fscore)}% of beats. Mark floor spots and check spacing to neighbors."})
+                      f"{round(100 - fscore)}% of beats. Mark floor spots and hold them through the count."})
     for f in sorted(res.get("pose_flags") or [], key=lambda f: -f["deg"])[:1]:
         notes.append({"dancer": name(f["dancer"]), "time_s": f["time_s"],
                       "text": f"{name(f['dancer'])}'s {f['limb']} is {f['deg']} degrees off the crew at {_mmss(f['time_s'])}. "

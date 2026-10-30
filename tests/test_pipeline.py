@@ -75,9 +75,22 @@ def test_formation_line_and_spacing():
     assert formation.beat_ok(off_line, 200) == {"0": True, "1": True, "2": False, "3": True, "4": True}
     end_off_line = {**line, "4": (400.0, 545.0)}  # an end dancer must not tilt the fitted line
     assert formation.beat_ok(end_off_line, 130) == {"0": True, "1": True, "2": True, "3": True, "4": False}
-    bunched = {**line, "4": (310.0, 500.0)}
-    assert not formation.beat_ok(bunched, 200)["4"]
     assert formation.beat_ok({"0": (0, 0), "1": (1, 1)}, 200) == {}
+
+
+def test_formation_v_shape_holds_then_one_dancer_drifts():
+    n, beat_frames = 60, np.arange(0, 60, 10)
+    v = [(0.0, 500.0), (100.0, 560.0), (200.0, 620.0), (300.0, 560.0), (400.0, 500.0)]  # not a line, uneven gaps
+    trk = {}
+    for i, (x, y) in enumerate(v):
+        feet = np.tile([x, y], (n, 1))
+        if i == 2:
+            feet[40:, 0] += 70  # the point of the V slides sideways during the hold (0.35 heights)
+        trk[str(i)] = {"feet": feet, "box": np.tile([x, 300, x + 60, 500.0], (n, 1))}
+    scores, per_beat = formation.scores(trk, beat_frames)
+    assert all(per_beat[k][i] for k in range(4) for i in per_beat[k])  # a V held still is a formation
+    assert per_beat[4] == {"0": True, "1": True, "2": False, "3": True, "4": True}
+    assert scores["2"] < 100 and scores["0"] == 100
 
 
 def test_formation_skips_transitions():

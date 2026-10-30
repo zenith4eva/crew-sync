@@ -1,27 +1,24 @@
-"""Formation from feet points. Within the crew: even spacing and straight lines, in dancer heights.
-Against a reference take: each dancer's position vs their matched reference dancer, after removing shift and scale."""
+"""Formation from feet points, in dancer heights. Within the crew: straight lines, and each dancer holding their spot
+in the shape the crew took at the start of a hold (shift and scale removed, so a V or staggered rows score as well
+as a line). Against a reference take: each dancer's position vs their matched reference dancer, same normalization."""
 import numpy as np
 
 from backend import config
 
 
 def beat_ok(points: dict, height: float) -> dict:
-    """points: {dancer: (x, y) feet in px} on one beat. Returns {dancer: in formation?}; empty if too few dancers.
+    """points: {dancer: (x, y) feet in px} on one beat. Returns {dancer: on the crew's line?} when the crew is in a
+    line, all True otherwise; empty if too few dancers. An even-spacing check was dropped Oct 30: on DanceTrack
+    it failed 30% of professional dancer-beats (pairs and asymmetric shapes are choreography, not errors).
     ponytail: feet y is raw screen depth (no perspective correction); add a floor homography if back rows score badly."""
     ids = [i for i, p in points.items() if not np.isnan(p).any()]
     if len(ids) < config.MIN_DANCERS_FORMATION or not height > 0:
         return {}
     p = np.array([points[i] for i in ids]) / height
-    d = np.linalg.norm(p[:, None] - p[None], axis=2)
-    np.fill_diagonal(d, np.inf)
-    nn = d.min(axis=1)
-    med = np.median(nn)
-    spacing_ok = np.abs(nn - med) <= config.SPACING_TOL * med
-
     dist = _robust_line_dist(p)
-    in_line = np.median(dist) < config.LINE_FIT_MAX
-    line_ok = dist <= config.LINE_TOL if in_line else np.ones(len(ids), bool)
-    return {i: bool(s and l) for i, s, l in zip(ids, spacing_ok, line_ok)}
+    in_line = np.percentile(dist, 75) < config.LINE_FIT_MAX  # 3 of 4 on it; a V is two lines, not one with outliers
+    ok = dist <= config.LINE_TOL if in_line else np.ones(len(ids), bool)
+    return {i: bool(l) for i, l in zip(ids, ok)}
 
 
 def _line_dist(p: np.ndarray, fit: np.ndarray) -> np.ndarray:
@@ -54,7 +51,7 @@ def normalize(p: np.ndarray) -> np.ndarray | None:
     return c / s if s > 0 else None
 
 
-def reference_beat_ok(points: dict, ref_points: dict, height: float) -> dict:
+def reference_beat_ok(points: dict, ref_points: dict, height: float, tol: float = config.REF_FORMATION_TOL) -> dict:
     """Each dancer vs their matched reference dancer on one beat. The reference formation is shifted and scaled
     onto the crew's, then each dancer's distance from their spot is measured in the crew's dancer heights."""
     ids = [i for i in points if i in ref_points and not np.isnan(points[i]).any() and not np.isnan(ref_points[i]).any()]
@@ -67,7 +64,7 @@ def reference_beat_ok(points: dict, ref_points: dict, height: float) -> dict:
         return {}
     q *= np.sqrt(np.mean(np.sum(p ** 2, axis=1))) / q_rms
     err = np.linalg.norm(p - q, axis=1) / height
-    return {i: bool(e <= config.REF_FORMATION_TOL) for i, e in zip(ids, err)}
+    return {i: bool(e <= tol) for i, e in zip(ids, err)}
 
 
 def scores(tracks: dict, beat_frames: np.ndarray, ref_feet: dict | None = None) -> tuple[dict, list[dict]]:
@@ -80,13 +77,21 @@ def scores(tracks: dict, beat_frames: np.ndarray, ref_feet: dict | None = None) 
         per_beat = [reference_beat_ok({i: tracks[i]["feet"][f] for i in ref_feet},
                                       {i: ref_feet[i][f] for i in ref_feet}, height) for f in beat_frames]
         return _per_dancer(tracks, per_beat), per_beat
-    per_beat = []
+    per_beat, anchor = [], None
     for k, f in enumerate(beat_frames):
         # Skip beats where the crew is moving between formations; only held formations are scored.
         if k and height and _crew_move(tracks, beat_frames[k - 1], f) / height >= config.HOLD_MAX_MOVE:
             per_beat.append({})
-        else:
-            per_beat.append(beat_ok({i: t["feet"][f] for i, t in tracks.items()}, height))
+            anchor = None
+            continue
+        points = {i: t["feet"][f] for i, t in tracks.items()}
+        ok = beat_ok(points, height)
+        if ok and anchor:
+            # Shape stability: each dancer vs their own spot on the first beat of this hold.
+            held = reference_beat_ok(points, anchor, height, config.HOLD_TOL)
+            ok = {i: v and held.get(i, True) for i, v in ok.items()}
+        anchor = anchor or (points if ok else None)
+        per_beat.append(ok)
     return _per_dancer(tracks, per_beat), per_beat
 
 

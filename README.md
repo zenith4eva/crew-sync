@@ -29,7 +29,7 @@ https://github.com/user-attachments/assets/65bc6772-1c9b-4b11-807b-1d2c4e7d4912
 | --- | --- |
 | **One crew score** | A Crew Sync Score out of 100 (0.6 timing, 0.4 formation), who has the most to gain, and the biggest miss in plain words. |
 | **Every dancer, every beat** | The sync strip: one lane per dancer, a tick per beat. Lime is with the crew, white is off it, a red band is a flagged moment. Click a band to jump the video there. |
-| **The formation from above** | Feet positions on a top-down map, with drift since the last beat and who breaks the spacing or the line. |
+| **The formation from above** | Feet positions on a top-down map, with drift since the last beat and who leaves their spot or the line. |
 | **Coaching notes** | Three to five fixes written by Muse Spark from the numbers, each tied to a dancer and a moment. |
 | **Before and after** | Pick an earlier take to see the crew score and every named dancer's change. |
 | **A Reel to share** | 20 s, 9:16: the score reveal, the moment to fix, the crew in outline. It never names a dancer. |
@@ -86,7 +86,7 @@ Then open `http://<your computer's IP>:8000` on the phone (on a Mac, `ipconfig g
 1. **Track:** SAM 3.1 (Meta Model API) segments every dancer with the prompt "person" and keeps each identity across the clip.
 2. **Beat grid:** librosa finds the beats in the audio. You can set the BPM and first beat by hand when rehearsal audio is noisy or missing.
 3. **Timing:** each dancer's motion signal (frame-to-frame mask change) is cross-correlated with the rest of the crew's around every beat. The lag is that dancer's offset. A crew that is late together still scores 100.
-4. **Formation:** feet points (bottom of each mask) give a top-down map. On each beat where the crew holds a formation (not walking to a new one), it checks spacing to neighbors and, when the crew is in a line, distance from it. The line fit ignores dancers who are off it.
+4. **Formation:** feet points (bottom of each mask) give a top-down map. On each beat where the crew holds a formation (not walking to a new one), it checks that each dancer holds the spot they took at the start of that hold (overall shift and scale removed, so a V or staggered rows count as much as a line) and, when the crew is in a line, their distance from it. The line fit ignores dancers who are off it.
 5. **Score:** dancer score = 0.6 timing + 0.4 formation. The crew score is the mean.
 6. **Coaching:** Muse Spark turns the numbers into 3 to 5 fixes as structured JSON. If Muse is unavailable, the notes are built from the numbers and labelled as such.
 7. **Share:** a 20 s, 9:16 Sync Score Reel with the score reveal, the worst moment and the crew with outlines. It shows only the crew number and never names a dancer.
@@ -138,7 +138,7 @@ Every dancer was within 25 ms at every shift. Our first method, the motion peak 
 - On these professional crews, 65% of scored beats fall within ±100 ms of the crew. We don't know yet how much of the rest is real and how much is measurement noise; hand-labelled clips will tell.
 - 70% of dancer-beats are scored. A beat is skipped when that dancer is untracked or their movement doesn't match the crew's (different choreography, occlusion).
 - Formation uses raw screen depth with no perspective correction, so back-row spacing reads smaller than it is.
-- Without a reference, formation assumes even spacing. Staggered rows and V shapes score low even when danced well: on DanceTrack, line-based clips score 83 to 90, other clips 53 to 64. Scoring against a reference take avoids this.
+- Without a reference, formation only checks that each dancer holds their spot through a held formation and stays on the line when there is one. A dancer who settles in the wrong spot and holds it is not caught; scoring against a reference take is. An even-spacing check was tried and dropped (October 30): it failed 30% of professional dancer-beats on DanceTrack (pairs and asymmetric shapes are choreography), scoring the five clips 53 to 90 where the current check scores them 76 to 97.
 - Body pose is tested only against a stand-in for SAM 3D Body, because its weights are gated (see below). The keypoint indices and API come from the sam-3d-body source.
 ## Run it
 
@@ -174,6 +174,7 @@ Evaluation (DanceTrack val unzipped into `data/dancetrack/val`):
 .venv/Scripts/python -m eval.dancetrack_switches data/dancetrack/val --clips 5 --seconds 30
 .venv/Scripts/python -m eval.shift_test
 .venv/Scripts/python -m eval.flag_test
+.venv/Scripts/python -m eval.formation_check
 ```
 
 The shift and flag tests read the clip list the last gate run wrote, so run the 5-clip gate (cached, free) before them.
