@@ -132,7 +132,7 @@ Most raw switches are flips of 1 to 13 frames while two dancers overlap; they se
 
 Every dancer was within 25 ms at every shift. Our first method, the motion peak nearest each beat, measured 9 ms for a 100 ms shift on these real tracks and was replaced.
 
-**Flagging (flag test).** We delayed each of the 34 dancers in turn by 150 ms for 4 s at a random point, using real tracks. The app flagged the delay in 68% of trials. On these professional crews it also raised 4.4 other flags per dancer-minute; some may be real, so that's an upper bound on false alarms. Flags need two beats in a row more than 120 ms off. Longer runs, sign-consistent runs, smoothing across beats and a three-band motion signal all traded detection for fewer flags without beating this balance.
+**Flagging (flag test).** We delayed each of the 34 dancers in turn by 150 ms for 4 s at a random point, using real tracks. The app flagged the delay in 71% of trials (re-run October 30, 2026, after the tracking overlap fix). On these professional crews it also raised 4.1 other flags per dancer-minute; some may be real, so that's an upper bound on false alarms. Flags need two beats in a row more than 120 ms off. Longer runs, sign-consistent runs, smoothing across beats, a three-band motion signal and a per-dancer threshold scaled to each dancer's own offset spread all traded detection for fewer flags without beating this balance.
 
 **Limits we know about.**
 - On these professional crews, 65% of scored beats fall within ±100 ms of the crew. We don't know yet how much of the rest is real and how much is measurement noise; hand-labelled clips will tell.
