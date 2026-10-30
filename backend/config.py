@@ -41,6 +41,9 @@ MOTION_SMOOTH_FRAMES = 3
 # Timing
 TIMING_TOL_S = 0.100       # within ±100 ms of the crew median counts as in sync
 FLAG_MIN_RUN = 2           # flag after this many consecutive off beats
+                           # Oct 30: a per-dancer threshold (max(FLAG_TOL_S, K x that dancer's offset MAD)) was tried
+                           # and dropped: K=1 68% caught / 3.9 false, K=2 32% / 2.9, vs fixed 71% / 4.1. The false
+                           # flags aren't dancer-specific jitter.
 FLAG_TOL_S = 0.120         # flag only beyond this (scoring keeps TIMING_TOL_S); eval.flag_test Oct 27:
                            # 0.10 -> 71% caught, 6.3 false/dancer-min; 0.12 -> 68%, 4.4
 TIMING_MAX_LAG_S = 0.35    # largest offset we search for; a dancer further off reads as different choreography
