@@ -2,6 +2,7 @@
 import asyncio
 import json
 import tempfile
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
@@ -14,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from backend import config, jobs, media
-from backend.pipeline import labels as labels_mod
+from backend.pipeline import beats, labels as labels_mod
 from backend.reel import render
 
 async def _cleanup_loop():
@@ -28,6 +29,7 @@ async def _cleanup_loop():
 async def lifespan(_app):
     config.JOBS_DIR.mkdir(parents=True, exist_ok=True)
     jobs.fail_stale()
+    threading.Thread(target=beats.warm, daemon=True).start()
     task = asyncio.create_task(_cleanup_loop())
     yield
     task.cancel()

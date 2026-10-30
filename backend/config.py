@@ -48,7 +48,10 @@ FLAG_MIN_RUN = 2           # flag after this many consecutive off beats
 FLAG_TOL_S = 0.120         # flag only beyond this (scoring keeps TIMING_TOL_S); eval.flag_test Oct 27:
                            # 0.10 -> 71% caught, 6.3 false/dancer-min; 0.12 -> 68%, 4.4
 TIMING_MAX_LAG_S = 0.35    # largest offset we search for; a dancer further off reads as different choreography
-TIMING_MIN_CORR = 0.5      # below this a dancer's movement doesn't match the crew's; that beat isn't scored
+TIMING_MIN_CORR = 0.5      # below this a dancer's movement doesn't match the crew's; that beat isn't scored.
+                           # Oct 30 sweep with the differenced signal (flag_test 150 ms caught / other flags per
+                           # dancer-min): 0.3 85% / 2.7, 0.4 82% / 2.3, 0.5 76% / 1.6, 0.6 68% / 0.7. Same frontier for
+                           # OVERLAP_MAX 0.8-1.1, FLAG_TOL_S 0.10-0.14, FLAG_MIN_RUN 3 and TIMING_WINDOW_BEATS 1.5-3.
 TIMING_WINDOW_BEATS = 2    # correlate over this many beats either side; DanceTrack sweep (Oct 27): 1 was too noisy
 TIMING_MIN_VALID = 0.5     # share of a beat's window that must be tracked (and not overlapped) to time that beat
 OVERLAP_MAX = 0.7          # don't time frames where another dancer's box covers more than this of a dancer's box.
