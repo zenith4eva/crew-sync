@@ -92,7 +92,6 @@ Then open `http://<your computer's IP>:8000` on the phone (on a Mac, `ipconfig g
 7. **Share:** a 20 s, 9:16 Sync Score Reel with the score reveal, the worst moment and the crew with outlines. It shows only the crew number and never names a dancer.
 8. **Before and after:** pick an earlier take on the results page to see the crew score and each named dancer's change.
 9. **Reference take (optional):** upload the leader's or the official video to score against it instead of the crew. The two takes are aligned by cross-correlating their audio, a mirror switch handles mirror-mode practice videos, and dancers are matched to reference dancers on the opening formation (editable). Timing is then measured against each dancer's match, and formation is each dancer's distance from their match's spot after removing overall shift and scale. The reference video is deleted as soon as it is tracked and is never shown or put in the Reel.
-10. **Body pose (optional):** SAM 3D Body (open weights, run locally on a GPU) estimates each dancer's 3D joints every 0.25 s, using SAM 3.1's boxes. Each limb's direction in the dancer's own torso frame is compared with the crew's, so a dancer facing a little differently isn't penalized. Limbs more than 25° off are flagged, and the score weights become 0.4 timing, 0.3 formation, 0.3 pose.
 
 The app also warns when the camera moves (phase correlation on the background), when more than 9 dancers are in frame, and when fewer dancers are found than expected.
 
@@ -100,7 +99,6 @@ The app also warns when the camera moves (phase correlation on the background), 
 | --- | --- |
 | SAM 3.1 | Find every dancer, masks and boxes, stable identity per dancer |
 | Muse Spark 1.3 | Coaching notes as structured JSON |
-| SAM 3D Body (optional) | 3D joints per dancer for limb-angle checks |
 
 ## Evaluation
 
@@ -139,7 +137,6 @@ Every dancer was within 25 ms at every shift. Our first method, the motion peak 
 - 63% of dancer-beats are scored. A beat is skipped when that dancer is untracked or their movement doesn't match the crew's (different choreography, occlusion).
 - Formation uses raw screen depth with no perspective correction, so back-row spacing reads smaller than it is.
 - Without a reference, formation only checks that each dancer holds their spot through a held formation and stays on the line when there is one. A dancer pushed 0.3 heights sideways during a hold is caught 12 times in 13 on DanceTrack; one who settles in the wrong spot during a transition and holds it is not caught, and scoring against a reference take is the fix. An even-spacing check was tried and dropped (October 30): it failed 30% of professional dancer-beats on DanceTrack (pairs and asymmetric shapes are choreography), scoring the five clips 53 to 90 where the current check scores them 77 to 99.
-- Body pose is tested only against a stand-in for SAM 3D Body, because its weights are gated (see below). The keypoint indices and API come from the sam-3d-body source.
 ## Run it
 
 Needs Python 3.11 and Node 18+ (macOS, Linux or Windows). ffmpeg comes from the `imageio-ffmpeg` package. The commands below use the Windows path `.venv/Scripts/`; on macOS and Linux it is `.venv/bin/` (and `python3.11` instead of `py -3.11`).
@@ -184,12 +181,6 @@ Hand labels: open a processed clip, expand "Hand-label this clip", play at quart
 ```bash
 .venv/Scripts/python -m eval.hand_label_check <job_id>
 ```
-
-Body pose (needs an NVIDIA GPU):
-
-1. Request access to [facebook/sam-3d-body-dinov3](https://huggingface.co/facebook/sam-3d-body-dinov3) on Hugging Face and log in with `hf auth login`.
-2. Clone [sam-3d-body](https://github.com/facebookresearch/sam-3d-body) and install it in its own Python 3.11 environment per its INSTALL.md (PyTorch with CUDA; the detector, segmentor and MoGe are not needed).
-3. Add to `.env`: `POSE_PYTHON=<that env's python>` and `POSE_REPO=<the clone>`. New jobs then run pose after tracking; without these settings, pose is off.
 
 Docker (one image serves the UI and API on :8000):
 

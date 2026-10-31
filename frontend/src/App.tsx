@@ -210,7 +210,7 @@ function Job({ id, onLeave }: { id: string; onLeave: () => void }) {
     </div>
   );
   if (st.state !== 'done') {
-    const now = st.step?.includes('pose') ? 1 : Math.max(0, STEPS.indexOf(st.step ?? ''));
+    const now = Math.max(0, STEPS.indexOf(st.step ?? ''));
     return (
       <div className="card narrow">
         <h1>Analyzing your rehearsal</h1>

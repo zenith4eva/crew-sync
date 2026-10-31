@@ -152,7 +152,7 @@ export default function ResultsView({ id, status, onDelete }: { id: string; stat
           <section className="card">
             <div className="card-head"><h2>Dancers</h2><span className="end faint small">Tap a name to rename</span></div>
             <table className="dancers">
-              <thead><tr><th>Name</th><th className="num">Score</th><th className="num">Timing</th><th className="num">Form.</th>{res.pose_flags && <th className="num">Pose</th>}</tr></thead>
+              <thead><tr><th>Name</th><th className="num">Score</th><th className="num">Timing</th><th className="num">Form.</th></tr></thead>
               <tbody>
                 {ids.map(d => (
                   <tr key={d}>
@@ -167,7 +167,6 @@ export default function ResultsView({ id, status, onDelete }: { id: string; stat
                       <div className="bar" aria-hidden><span style={{ width: `${res.dancers[d].score ?? 0}%` }} /></div></td>
                     <td className="num muted">{pct(res.dancers[d].timing)}</td>
                     <td className="num muted">{pct(res.dancers[d].formation)}</td>
-                    {res.pose_flags && <td className="num muted">{pct(res.dancers[d].pose ?? null)}</td>}
                   </tr>
                 ))}
               </tbody>
@@ -204,22 +203,6 @@ export default function ResultsView({ id, status, onDelete }: { id: string; stat
               onResults={r => { setRes(r); api.status(id).then(s => setWarnings(s.warnings), () => {}); }} />
           </section>
         </div>
-
-        {res.pose_flags && (
-          <section className="card span-6">
-            <div className="card-head"><h2>Body pose</h2><span className="end faint small">Limbs over 25° off the crew's shape</span></div>
-            <ul className="flags" style={{ marginTop: 0 }}>
-              {[...res.pose_flags].sort((a, b) => b.deg - a.deg).slice(0, 6).sort((a, b) => a.time_s - b.time_s).map((f, i) => (
-                <li key={i} className="go" onClick={() => seek(f.time_s)}>
-                  <span className="when">{mmss(f.time_s)}</span>
-                  <span className="what"><span className="dot" style={{ background: color(f.dancer), marginRight: 8 }} /><b>{label(f.dancer)}</b> {f.limb}</span>
-                  <span className="pill neg">{f.deg}° off</span>
-                </li>
-              ))}
-              {!res.pose_flags.length && <li className="faint">Every limb matches the crew.</li>}
-            </ul>
-          </section>
-        )}
 
         <section className="card span-6">
           <div className="card-head"><h2>Coaching notes</h2>

@@ -10,7 +10,7 @@ import numpy as np
 
 from backend import config, media
 from backend.meta import muse_client, sam_client
-from backend.pipeline import beats, pose, reference, score, tracks
+from backend.pipeline import beats, reference, score, tracks
 
 
 def log(job_id: str, event: str, **fields) -> None:
@@ -99,13 +99,6 @@ def process(job_id: str) -> None:
         log(job_id, "sam_start")
         tracks_path = sam_client.track_video(d / "video.mp4")
         write_status(job_id, tracks=str(tracks_path.name))
-        if config.POSE_PYTHON:
-            write_status(job_id, step="estimating body pose with SAM 3D Body")
-            try:
-                sam_client.estimate_pose(d / "video.mp4", tracks_path, config.FPS, d / "pose.json")
-                write_status(job_id, pose_error=None)
-            except sam_client.MetaApiError as e:  # pose is optional: score without it and say why
-                write_status(job_id, pose_error=str(e))
         write_status(job_id, step="scoring")
         compute(job_id, notes=True)
         write_status(job_id, state="done", step=None)
@@ -173,24 +166,6 @@ def _reference(st: dict, trk: dict, n_frames: int, warnings: list) -> tuple[dict
     return {i: tl[j] for i, j in matches.items()}, info
 
 
-def _pose_beats(d: Path, st: dict, trk: dict, grid: np.ndarray) -> list | None:
-    """Per-beat pose comparison from the cached SAM 3D Body keypoints (nearest sampled frame to each beat), with
-    tap-to-fix swaps applied. None when pose wasn't run for this job."""
-    path = d / "pose.json"
-    if not path.exists():
-        return None
-    kps = json.loads(path.read_text(encoding="utf-8"))
-    sampled = np.array(sorted(int(f) for f in kps))
-    if not sampled.size:
-        return None
-    per_beat = []
-    for t in grid:
-        f = int(sampled[np.argmin(np.abs(sampled - t * config.FPS))])
-        people = {tracks.relabel(raw, f, st["swaps"]): kp for raw, kp in kps[str(f)].items()}
-        per_beat.append(pose.compare({i: np.array(kp) for i, kp in people.items() if i in trk}))
-    return per_beat
-
-
 def compute(job_id: str, notes: bool) -> dict:
     """Score from cached tracks. No SAM call; Muse is called only when notes=True."""
     d = config.JOBS_DIR / job_id
@@ -217,9 +192,7 @@ def compute(job_id: str, notes: bool) -> dict:
         grid = beats.manual(120, 0.0, duration)
 
     ref, ref_info = _reference(st, trk, n_frames, warnings)
-    if st.get("pose_error"):
-        warnings.append(f"Body pose was skipped: {st['pose_error']}")
-    res = score.run(trk, grid, config.FPS, ref=ref, pose_beats=_pose_beats(d, st, trk, grid))
+    res = score.run(trk, grid, config.FPS, ref=ref)
     res["n_frames"], res["fps"], res["reference"] = n_frames, config.FPS, ref_info
     res["overlay"] = {i: {"box": [None if np.isnan(b[0]) else [round(v) for v in b] for b in t["box"]],
                           "feet": [None if np.isnan(p[0]) else [round(v, 1) for v in p] for p in t["feet"]],
@@ -249,12 +222,8 @@ def make_notes(res: dict, names: dict) -> tuple[list, str]:
     name = display_names(res, names).get
     summary = {
         "crew_score": round(res["crew_score"]),
-        "dancers": {name(i): {"timing": _r(v["timing"]), "formation": _r(v["formation"]),
-                              **({"pose": _r(v["pose"])} if "pose" in v else {})} for i, v in res["dancers"].items()},
+        "dancers": {name(i): {"timing": _r(v["timing"]), "formation": _r(v["formation"])} for i, v in res["dancers"].items()},
         "flagged_moments": [{**f, "dancer": name(f["dancer"])} for f in res["flags"][:10]],
-        **({"pose_moments": [{"dancer": name(f["dancer"]), "time_s": f["time_s"], "limb": f["limb"],
-                              "degrees_off_crew": f["deg"]} for f in sorted(res["pose_flags"], key=lambda f: -f["deg"])[:10]]}
-           if res.get("pose_flags") else {}),
         "measured_against": "the reference take (timing and positions vs the matched reference dancer)"
                             if res.get("reference") else "the rest of the crew",
     }
@@ -275,10 +244,6 @@ def template_notes(res: dict, name) -> list[dict]:
     for i, fscore in sorted(weak, key=lambda x: x[1])[:2]:
         notes.append({"dancer": name(i), "time_s": 0, "text": f"{name(i)} is out of formation on "
                       f"{round(100 - fscore)}% of beats. Mark floor spots and hold them through the count."})
-    for f in sorted(res.get("pose_flags") or [], key=lambda f: -f["deg"])[:1]:
-        notes.append({"dancer": name(f["dancer"]), "time_s": f["time_s"],
-                      "text": f"{name(f['dancer'])}'s {f['limb']} is {f['deg']} degrees off the crew at {_mmss(f['time_s'])}. "
-                              "Match the shape in the mirror with the crew."})
     if not notes:
         notes.append({"dancer": "crew", "time_s": 0, "text": "The crew is in sync. Push energy and clean up arms next."})
     return notes

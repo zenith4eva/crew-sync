@@ -90,59 +90,6 @@ def test_reference_take(client):
     assert c.delete(f"/api/jobs/{job}/reference").json()["reference"] is None
 
 
-FAKE_SAM3D = '''
-import numpy as np
-def _skel(raised):
-    kp = np.zeros((70, 3))
-    for k, v in {5: (-.2, 1.5, 0), 6: (.2, 1.5, 0), 9: (-.15, 1, 0), 10: (.15, 1, 0), 7: (-.25, 1.2, 0), 8: (.25, 1.2, 0),
-                 62: (-.25, .95, 0), 11: (-.15, .5, 0), 12: (.15, .5, 0), 13: (-.15, .05, 0), 14: (.15, .05, 0)}.items():
-        kp[k] = v
-    kp[41] = kp[8] + (np.array([0, 0, -.25]) if raised else np.array([0, -.25, 0]))
-    return kp
-class Est:
-    def process_one_image(self, img, bboxes=None):
-        # dancer 2 of the synthetic crew stands at x ~ 320 and dances with the right forearm raised
-        return [{"pred_keypoints_3d": _skel(300 < (b[0] + b[2]) / 2 < 345)} for b in bboxes]
-def setup_sam_3d_body(**kw):
-    assert kw["detector_name"] == "" and kw["fov_name"] == ""
-    return Est()
-'''
-FAKE_CV2 = '''
-import numpy as np
-CAP_PROP_POS_FRAMES, COLOR_BGR2RGB = 1, 4
-class VideoCapture:
-    def __init__(self, path): pass
-    def set(self, prop, value): pass
-    def read(self): return True, np.zeros((4, 4, 3), np.uint8)
-def cvtColor(img, code): return img
-'''
-
-
-def test_pose_stretch(client, monkeypatch):
-    """Runs the real runner script and pose scoring against a stand-in for the gated SAM 3D Body model."""
-    import sys
-    from backend import config
-    c, data = client
-    repo, fake = data / "sam-3d-body", data / "fakecv2"
-    (repo / "notebook").mkdir(parents=True)
-    (repo / "notebook" / "utils.py").write_text(FAKE_SAM3D)
-    fake.mkdir()
-    (fake / "cv2.py").write_text(FAKE_CV2)
-    monkeypatch.setenv("PYTHONPATH", str(fake))
-    monkeypatch.setattr(config, "POSE_PYTHON", sys.executable)
-    monkeypatch.setattr(config, "POSE_REPO", str(repo))
-    from eval import make_synthetic
-    clip = make_synthetic.make(data / "crew.mp4", fixed=True)
-    with open(clip, "rb") as f:
-        job = c.post("/api/jobs", files={"video": ("crew.mp4", f, "video/mp4")}, data={"dancers": 5, "consent": "true"}).json()["id"]
-    st = c.get(f"/api/jobs/{job}").json()
-    assert st["state"] == "done" and not st.get("pose_error"), st
-    res = c.get(f"/api/jobs/{job}/results").json()
-    assert res["dancers"]["7"]["pose"] == 0 and res["dancers"]["1"]["pose"] == 100
-    assert res["dancers"]["7"]["score"] == pytest.approx(0.4 * 100 + 0.3 * 100 + 0.3 * 0, abs=1)
-    assert {f["limb"] for f in res["pose_flags"]} == {"right forearm"} and all(f["dancer"] == "7" for f in res["pose_flags"])
-
-
 def test_camera_motion_detected(tmp_path):
     import subprocess
     from backend import config, media

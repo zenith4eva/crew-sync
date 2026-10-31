@@ -18,7 +18,7 @@ export type LabelAgreement = {
 };
 export type Flag ={ dancer: string; start_beat: number; end_beat: number; time_s: number; offset_ms: number; moving?: boolean };
 export type Note = { dancer: string; time_s: number; text: string };
-export type Dancer = { timing: number | null; formation: number | null; pose?: number | null; score: number | null; offsets_ms: (number | null)[] };
+export type Dancer = { timing: number | null; formation: number | null; score: number | null; offsets_ms: (number | null)[] };
 
 export type Results = {
   crew_score: number | null;
@@ -33,7 +33,6 @@ export type Results = {
   notes: Note[];
   notes_source: 'muse' | 'template' | null;
   reference: { lag_s: number; mirror: boolean; matches: Record<string, string>; ref_order: string[] } | null;
-  pose_flags: { dancer: string; start_beat: number; end_beat: number; time_s: number; limb: string; deg: number }[] | null;
 };
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {

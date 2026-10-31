@@ -96,14 +96,6 @@ MAX_RELIABLE_DANCERS = 9   # DanceTrack gate (Oct 27): 12 dancers gave 6 lasting
 REF_FORMATION_TOL = 0.25   # max distance from the matched reference dancer's spot, in dancer heights
 REF_MAX_LAG_S = 30         # search this far either way when aligning the two audio tracks
 
-# Body pose (stretch 2): SAM 3D Body runs in its own Python env (torch + CUDA); unset POSE_PYTHON to turn it off
-POSE_PYTHON = os.getenv("POSE_PYTHON", "")          # e.g. C:/envs/sam3d/python.exe
-POSE_REPO = os.getenv("POSE_REPO", "")              # clone of github.com/facebookresearch/sam-3d-body
-POSE_HF_REPO = os.getenv("POSE_HF_REPO", "facebook/sam-3d-body-dinov3")  # gated: request access on Hugging Face
-POSE_SAMPLE_S = 0.25       # run pose on a frame this often; beats use the nearest, so a BPM change needs no rerun
-POSE_TOL_DEG = 25          # a limb more than this far from the crew's is flagged
-W_WITH_POSE = (0.4, 0.3, 0.3)  # timing, formation, pose weights when pose is on (PRD)
-
 # Crew Sync Score
 W_TIMING = 0.6
 W_FORMATION = 0.4
