@@ -61,6 +61,8 @@ TIMING_MIN_VALID = 0.8     # share of a beat's window that must be tracked (and 
                            # 0.8 -> 0.9: wrong flags 8 -> 5 -> 3, real kept 6 at all; flag_test 150 ms 76 -> 74 -> 71%,
                            # 250 ms 82 -> 71 -> 68%, other flags 1.6 -> 1.1 -> 0.8 per dancer-min; scored beats
                            # 63 -> 55 -> 49%. 0.8 keeps most injected recall; shift test error still <= 1 ms.
+                           # Also tried (Oct 31): hiding frames whose box area is > 40/30/20% off its 1 s rolling
+                           # median (mask merging). Lost real flags (6 -> 3) and 150 ms recall (74 -> 71 -> 68 -> 44%).
 OVERLAP_MAX = 0.7          # don't time frames where another dancer's box covers more than this of a dancer's box.
                            # Oct 30, vs off: flag_test 150 ms caught 71% -> 71%, 250 ms 68% -> 62%, other flags
                            # 4.4 -> 4.1/dancer-min; shift_test unchanged; I.O.I 44 -> 31 flags, 8 of the 10 largest
