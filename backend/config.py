@@ -38,6 +38,9 @@ ALLOWED_EXTS = {".mp4", ".mov"}
 CAMERA_MOTION_MAX = 0.08   # frame widths/s of drift before we warn; tripod clips read <= 0.031 (1 px rounding), handheld ~0.2
 MOTION_SMOOTH_FRAMES = 3       # on the mask-change signal, before differencing (tracks.motion_signal)
 MOTION_DIFF_SMOOTH_FRAMES = 2  # on the differenced signal; 3 caught more delays but doubled the other flags
+                           # Oct 31: splitting the mask into upper and lower halves (each band's IoU change through
+                           # the same signal) lost on every axis vs the whole mask: real hand-judged flags 6 -> 0-3
+                           # for upper, lower, z-mean, either-band and both-bands-agree; 150 ms recall 74 -> 41-71%.
 
 # Timing
 TIMING_TOL_S = 0.100       # within ±100 ms of the crew median counts as in sync
