@@ -76,7 +76,10 @@ HOLD_MAX_MOVE = 0.12       # crew feet moving more than this (dancer heights per
 FLAG_MOVING = 0.15         # a timing flag is tagged "while the crew was moving" when the crew's feet moved more
                            # than this (heights) over its beats. Hand labels on DanceTrack 0007 (Oct 30): both real
                            # flags at <= 0.12, 5 of 7 wrong ones at >= 0.18. A tag, not a filter: dropping those flags
-                           # also drops injected delays (flag_test 76% caught -> 18%).
+                           # also drops injected delays (flag_test 76% caught -> 18%). With the I.O.I labels too
+                           # (14 judged flags, Oct 30): 6 of 7 tagged flags wrong, 5 of 7 untagged real. Nothing
+                           # else separated them: peak correlation, run length, offset spread within the run and the
+                           # rest of the crew's offset spread all overlap between real and wrong flags.
 MAX_RELIABLE_DANCERS = 9   # DanceTrack gate (Oct 27): 12 dancers gave 6 lasting identity switches in 30 s
 
 # Reference take (stretch 1)
