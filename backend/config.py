@@ -33,6 +33,11 @@ ALLOWED_ORIGIN = os.getenv("ALLOWED_ORIGIN", "http://localhost:5173")
 
 # Processing
 FPS = 15
+                           # Oct 31: frame rate isn't the timing bottleneck. The 20 fps DanceTrack eval tracks
+                           # subsampled to 10 fps still catch 79% of 150 ms delays (vs 74% at 20 fps) with
+                           # 1.9 other flags per dancer-min (vs 1.1); smoothing windows are in frames, so
+                           # the lower rate smooths over twice the time. 30 fps (double the SAM bill) has no
+                           # measured case yet.
 MAX_HEIGHT = 720           # downscale before SAM; boxes come back in these pixels
 ALLOWED_EXTS = {".mp4", ".mov"}
 CAMERA_MOTION_MAX = 0.08   # frame widths/s of drift before we warn; tripod clips read <= 0.031 (1 px rounding), handheld ~0.2
