@@ -17,7 +17,7 @@ Built for the Meta Global AI Developer Hackathon (indie track), October 26 to No
 
 https://github.com/user-attachments/assets/65bc6772-1c9b-4b11-807b-1d2c4e7d4912
 
-<p align="center"><sub>70 s demo, turn the sound on · <a href="https://github.com/zenith4eva/crew-sync/releases/download/demo/crew-sync-demo.mp4">1080p download</a> · footage on Pexels: Westside Full, khanhhoangminh, Gustavo Fring, Anya Juarez · music: NickPanek on Pixabay</sub></p>
+<p align="center"><sub>84 s demo, turn the sound on · <a href="https://github.com/zenith4eva/crew-sync/releases/download/demo/crew-sync-demo.mp4">1080p download</a> · footage on Pexels: Westside Full, khanhhoangminh, Gustavo Fring, Anya Juarez, and DanceTrack (CC BY 4.0) · music: NickPanek on Pixabay</sub></p>
 
 ![The results screen: crew score, the biggest miss, every dancer outlined, scores per dancer and the formation from above](docs/results.png)
 
