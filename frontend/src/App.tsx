@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
-import { api, Status } from './api';
+import { api, Sample, Status } from './api';
 import Compare from './Compare';
 import Guide, { TIPS } from './Guide';
 import ResultsView from './Results';
@@ -57,6 +57,8 @@ function Upload({ onCreated }: { onCreated: (id: string) => void }) {
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [samples, setSamples] = useState<Sample[]>([]);
+  useEffect(() => { api.samples().then(setSamples).catch(() => setSamples([])); }, []);
   const takes = loadTakes();
 
   async function submit(e: React.FormEvent) {
@@ -98,6 +100,18 @@ function Upload({ onCreated }: { onCreated: (id: string) => void }) {
         <button className="primary" disabled={busy || !file || !consent}>{busy ? 'Uploading…' : 'Analyze rehearsal'}</button>
       </form>
       <div className="span-3 stack">
+      {samples.length > 0 && (
+        <section className="card">
+          <div className="card-head"><h2>Try a scored crew</h2><span className="end faint small">No upload needed</span></div>
+          <ul className="flags" style={{ marginTop: 0 }}>
+            {samples.map(s => (
+              <li key={s.id} className="go" onClick={() => open(s.id)}>
+                <span className="when">{s.dancers} dancers</span><a className="what" href={`#job=${s.id}`}>{s.title}</a><span />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <Preview />
       {takes.length > 0 && (
         <section className="card">

@@ -61,6 +61,12 @@ def health():
     return {"ok": True}
 
 
+@app.get("/api/samples")
+def samples():
+    """Built-in processed clips, so the hosted demo shows results without an upload."""
+    return jobs.samples()
+
+
 @app.post("/api/jobs")
 def create_job(background: BackgroundTasks, video: UploadFile = File(...),
                dancers: int = Form(..., ge=1, le=16), consent: bool = Form(...)):
@@ -161,7 +167,10 @@ def retry(job_id: str, background: BackgroundTasks):
 @app.delete("/api/jobs/{job_id}")
 def delete(job_id: str):
     _dir(job_id)
-    jobs.delete(job_id)
+    try:
+        jobs.delete(job_id)
+    except PermissionError as e:
+        raise HTTPException(403, str(e)) from None
     return {"deleted": job_id}
 
 

@@ -182,12 +182,14 @@ Hand labels: open a processed clip, expand "Hand-label this clip", play at quart
 .venv/Scripts/python -m eval.hand_label_check <job_id>
 ```
 
-Docker (one image serves the UI and API on :8000):
+Docker (one image serves the UI and API on :8000). `SAMPLES_URL` bakes in four processed Pexels crews, so the upload page offers "Try a scored crew" with no upload and no key:
 
 ```bash
-docker build -t crew-sync .
+docker build -t crew-sync --build-arg SAMPLES_URL=https://github.com/zenith4eva/crew-sync/releases/download/demo/samples.tar.gz .
 docker run -p 8000:8000 -e META_API_KEY=... -e ALLOWED_ORIGIN=https://your.host -v crewsync-data:/app/data crew-sync
 ```
+
+Hosted demo: `render.yaml` is a Render blueprint for the same image (Dashboard, New, Blueprint, pick this repo, set `META_API_KEY`). Sample jobs never expire and can't be deleted; uploads on the instance follow the 7-day rule. To pack a different sample set: `python -m eval.pack_samples samples.tar.gz <job_id>="<title>" ...` and upload the archive to the `demo` release.
 
 CI runs the unit tests and the end-to-end test on a synthetic clip on every push (`.github/workflows/test.yml`); no API key needed.
 

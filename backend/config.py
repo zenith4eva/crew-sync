@@ -29,7 +29,7 @@ MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", 500))
 MAX_CLIP_SECONDS = int(os.getenv("MAX_CLIP_SECONDS", 90))
 RETENTION_DAYS = int(os.getenv("RETENTION_DAYS", 7))
 MAX_JOBS_PER_DAY = int(os.getenv("MAX_JOBS_PER_DAY", 50))
-ALLOWED_ORIGIN = os.getenv("ALLOWED_ORIGIN", "http://localhost:5173")
+ALLOWED_ORIGIN = os.getenv("ALLOWED_ORIGIN") or os.getenv("RENDER_EXTERNAL_URL") or "http://localhost:5173"
 
 # Processing
 FPS = 15

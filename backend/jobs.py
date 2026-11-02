@@ -55,17 +55,37 @@ def jobs_today() -> int:
     return sum(1 for d in config.JOBS_DIR.iterdir() if d.is_dir() and time.time() - d.stat().st_ctime < 86400)
 
 
+def is_sample(job_id: str) -> bool:
+    """Sample jobs ship with the hosted demo (eval/pack_samples.py): never deleted, never expire."""
+    return bool(read_status(job_id).get("sample"))
+
+
+def samples() -> list[dict]:
+    if not config.JOBS_DIR.exists():
+        return []
+    out = []
+    for d in sorted(config.JOBS_DIR.iterdir()):
+        if d.is_dir() and (d / "results.json").exists():
+            st = read_status(d.name)
+            if st.get("sample"):
+                out.append({"id": d.name, "title": st.get("title") or f"Sample crew ({st['dancers']} dancers)",
+                            "dancers": st["dancers"]})
+    return out
+
+
 def cleanup() -> None:
-    """Delete jobs older than RETENTION_DAYS."""
+    """Delete jobs older than RETENTION_DAYS, except samples."""
     if not config.JOBS_DIR.exists():
         return
     cutoff = time.time() - config.RETENTION_DAYS * 86400
     for d in config.JOBS_DIR.iterdir():
-        if d.is_dir() and d.stat().st_mtime < cutoff:
+        if d.is_dir() and d.stat().st_mtime < cutoff and not is_sample(d.name):
             shutil.rmtree(d, ignore_errors=True)
 
 
 def delete(job_id: str) -> None:
+    if is_sample(job_id):
+        raise PermissionError("Sample jobs can't be deleted.")
     shutil.rmtree(job_dir(job_id))
 
 

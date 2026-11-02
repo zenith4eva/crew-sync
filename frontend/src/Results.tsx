@@ -106,7 +106,7 @@ export default function ResultsView({ id, status, onDelete }: { id: string; stat
         </div>
         <div className="actions">
           <CompareWith id={id} />
-          <button className="ghost" onClick={onDelete}>Delete video</button>
+          {!status.sample && <button className="ghost" onClick={onDelete}>Delete video</button>}
           <button className="primary" disabled={!!busy} onClick={exportReel}>{busy === 'reel' ? 'Rendering reel…' : 'Export Sync Score Reel'}</button>
         </div>
       </div>

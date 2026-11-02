@@ -1,0 +1,21 @@
+# Render blueprint: one Docker web service serving the UI and API, with the four sample crews baked in.
+# Render dashboard -> New -> Blueprint -> this repo, then set META_API_KEY. ALLOWED_ORIGIN falls back to
+# RENDER_EXTERNAL_URL (backend/config.py). Uploads land on the instance's disk and vanish on redeploy;
+# the samples come back with every build.
+services:
+  - type: web
+    name: crew-sync
+    runtime: docker
+    plan: starter          # free has 512 MB; scoring a 90 s clip wants more
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: META_API_KEY
+        sync: false
+      - key: SAMPLES_URL
+        value: https://github.com/zenith4eva/crew-sync/releases/download/demo/samples.tar.gz
+      - key: MAX_JOBS_PER_DAY
+        value: "50"

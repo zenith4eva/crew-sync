@@ -10,7 +10,10 @@ export type Status = {
   first_beat: number | null;
   warnings: string[];
   reference?: { state: 'queued' | 'running' | 'scoring' | 'done' | 'failed'; error?: string | null; mirror?: boolean; lag_s?: number } | null;
+  sample?: boolean; // ships with the hosted demo; can't be deleted
+  title?: string;
 };
+export type Sample = { id: string; title: string; dancers: number };
 
 export type HandLabel = { dancer: string; time_s: number; kind: 'late' | 'early' | 'wrong' };
 export type LabelAgreement = {
@@ -48,6 +51,7 @@ const json = (body: unknown): RequestInit => ({
 
 export const api = {
   upload: (form: FormData) => call<Status>('/jobs', { method: 'POST', body: form }),
+  samples: () => call<Sample[]>('/samples'),
   status: (id: string) => call<Status>(`/jobs/${id}`),
   results: (id: string) => call<Results>(`/jobs/${id}/results`),
   retry: (id: string) => call<Status>(`/jobs/${id}/retry`, { method: 'POST' }),

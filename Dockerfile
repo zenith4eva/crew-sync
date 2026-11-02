@@ -17,7 +17,13 @@ COPY backend/meta/package.json backend/meta/package-lock.json backend/meta/
 RUN cd backend/meta && npm ci --omit=dev
 COPY backend/ backend/
 COPY --from=ui /ui/dist frontend/dist
-RUN useradd -m app && mkdir -p data && chown app data
+# Built-in sample crews (eval/pack_samples.py): processed clips and their tracks, so the hosted demo shows
+# results with no upload. Leave SAMPLES_URL empty for an image without them.
+ARG SAMPLES_URL=""
+RUN mkdir -p data && if [ -n "$SAMPLES_URL" ]; then \
+      python -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], 'samples.tar.gz')" "$SAMPLES_URL" \
+      && tar -xzf samples.tar.gz -C data && rm samples.tar.gz; fi
+RUN useradd -m app && chown -R app data
 USER app
 EXPOSE 8000
 HEALTHCHECK CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"
