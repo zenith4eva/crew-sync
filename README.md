@@ -15,9 +15,9 @@ A crew that is late together still scores 100. Crew Sync looks for the one dance
 
 Built for the Meta Global AI Developer Hackathon (indie track), October 26 to November 4, 2026. All code was written during the hackathon.
 
-https://github.com/user-attachments/assets/65bc6772-1c9b-4b11-807b-1d2c4e7d4912
+[![Watch the 3-minute demo](docs/banner.svg)](https://github.com/zenith4eva/crew-sync/releases/download/demo/crew-sync-demo.mp4)
 
-<p align="center"><sub>3-minute demo, turn the sound on · <a href="https://github.com/zenith4eva/crew-sync/releases/download/demo/crew-sync-demo.mp4">1080p download</a> · footage on Pexels: Westside Full, khanhhoangminh, Gustavo Fring, Anya Juarez, and DanceTrack (CC BY 4.0) · music: NickPanek on Pixabay</sub></p>
+<p align="center"><sub><a href="https://github.com/zenith4eva/crew-sync/releases/download/demo/crew-sync-demo.mp4">Watch the 3-minute demo</a> (1080p, 100 MB), turn the sound on · footage on Pexels: Westside Full, khanhhoangminh, Gustavo Fring, Anya Juarez, and DanceTrack (CC BY 4.0) · music: NickPanek on Pixabay</sub></p>
 
 ![The results screen: crew score, the biggest miss, every dancer outlined, scores per dancer and the formation from above](docs/results.png)
 
